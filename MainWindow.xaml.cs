@@ -19,6 +19,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using System.Windows.Media;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace DollOverlay
 {
@@ -469,6 +470,10 @@ namespace DollOverlay
 
         private const string TokenFileName = "token.json";
         private const string SettingsFileName = "settings.json";
+        private DispatcherTimer _topmostTimer = new DispatcherTimer();
+
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -492,13 +497,56 @@ namespace DollOverlay
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-       public MainWindow()
+        private void TopmostTimer_Tick(object sender, EventArgs e)
+        {
+            // Этот "хак" заставляет окно всплыть на самый верх
+            // Сначала делаем его не topmost, а затем сразу topmost.
+            // Затем активируем окно.
+            this.Topmost = false;
+            this.Topmost = true;
+            
+            // Получаем дескриптор окна
+            IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            SetForegroundWindow(hwnd);
+        }
+
+        private async Task PerformActionAfterDelay()
+        {
+            await Task.Delay(5000); 
+
+            IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            SetForegroundWindow(hwnd);
+        }
+
+        private async void Window_Deactivated(object? sender, EventArgs e)
+        {
+            await Task.Delay(1000); 
+
+            // Возвращаем UI-поток для безопасного вызова
+            await Dispatcher.InvokeAsync(() =>
+            {
+                this.Topmost = false;
+                this.Topmost = true;
+                
+                IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                SetForegroundWindow(hwnd);
+            });
+        }
+
+        public MainWindow()
         {
             LoadWindowPosition();
             InitializeComponent();
             DataContext = this;
 
-            _refreshTimer.Interval = TimeSpan.FromSeconds(10);
+            // Настраиваем и запускаем таймер для поддержания окна Topmost
+            _topmostTimer.Interval = TimeSpan.FromSeconds(3); 
+            _topmostTimer.Tick += TopmostTimer_Tick;
+            _topmostTimer.Start();
+
+            // this.Deactivated += Window_Deactivated;
+
+            _refreshTimer.Interval = TimeSpan.FromSeconds(5);
             _refreshTimer.Tick += RefreshTimer_Tick;
 
             CastlesDataGrid.ItemsSource = _castlesObservable;
