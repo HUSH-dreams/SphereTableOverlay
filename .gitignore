@@ -1,0 +1,25 @@
+# Visual Studio Code
+.vscode/
+
+# Visual Studio/Rider
+.vs/
+*.suo
+*.user
+*.sln.docstates
+
+# Binaries and object files
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+
+# Package files
+*.nupkg
+*.pdb
+*.dll
+*.exe
+*.zip
+
+# User-specific files
+token.json
+settings.json

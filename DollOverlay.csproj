@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Net.Http.Json" Version="9.0.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="images/favicon.ico" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SphereTableOverlay</RootNamespace>
+    <AssemblyName>SphereTableOverlay</AssemblyName>
+    <ApplicationIcon>images/favicon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+</Project>
