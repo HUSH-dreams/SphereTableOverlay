@@ -30,6 +30,13 @@ namespace DollOverlay
         public double Left { get; set; }
         public double Height { get; set; }
         public double Width { get; set; }
+        public string? SelectedTableId { get; set; }
+        public bool IsBackgroundOpaque { get; set; }
+    }
+
+    public class ButtonSettings
+    {
+        public List<int> HiddenLevels { get; set; } = new List<int>();
     }
 
     // Модели для аутентификации
@@ -453,6 +460,7 @@ namespace DollOverlay
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private string? _token;
+        private string? _selectedTableId;
         private readonly HttpClient _httpClient = new HttpClient();
         private ClientWebSocket _webSocket = new ClientWebSocket();
         private CancellationTokenSource _cts = new CancellationTokenSource();
@@ -470,8 +478,9 @@ namespace DollOverlay
 
         private const string TokenFileName = "token.json";
         private const string SettingsFileName = "settings.json";
+        private const string ButtonSettingsFileName = "button_settings.json";
         private DispatcherTimer _topmostTimer = new DispatcherTimer();
-
+        private bool isBackgroundOpaque = true;
         [DllImport("user32.dll")]
         static extern bool SetForegroundWindow(IntPtr hWnd);
 
@@ -490,7 +499,7 @@ namespace DollOverlay
                 }
             }
         }
-        
+
         // Метод для вызова события PropertyChanged в MainWindow
         private void NotifyPropertyChanged([CallerMemberName] string? name = null)
         {
@@ -504,7 +513,7 @@ namespace DollOverlay
             // Затем активируем окно.
             this.Topmost = false;
             this.Topmost = true;
-            
+
             // Получаем дескриптор окна
             IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             SetForegroundWindow(hwnd);
@@ -512,7 +521,7 @@ namespace DollOverlay
 
         private async Task PerformActionAfterDelay()
         {
-            await Task.Delay(5000); 
+            await Task.Delay(5000);
 
             IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             SetForegroundWindow(hwnd);
@@ -520,29 +529,53 @@ namespace DollOverlay
 
         private async void Window_Deactivated(object? sender, EventArgs e)
         {
-            await Task.Delay(1000); 
+            await Task.Delay(1000);
 
             // Возвращаем UI-поток для безопасного вызова
             await Dispatcher.InvokeAsync(() =>
             {
                 this.Topmost = false;
                 this.Topmost = true;
-                
+
                 IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
                 SetForegroundWindow(hwnd);
             });
+        }
+
+        private void Window_MouseEnter(object sender, MouseEventArgs e)
+        {
+            // Проверяем, был ли фон изначально установлен как прозрачный
+            if (!isBackgroundOpaque)
+            {
+                // Делаем фон непрозрачным при наведении
+                this.Background = new SolidColorBrush(Color.FromArgb(255, 6, 27, 61));
+            }
+        }
+
+        private void Window_MouseLeave(object sender, MouseEventArgs e)
+        {
+            // Проверяем, был ли фон изначально установлен как прозрачный
+            if (!isBackgroundOpaque)
+            {
+                // Возвращаем фон к прозрачному состоянию при уходе мыши
+                this.Background = new SolidColorBrush(Colors.White) { Opacity = 0.01 };
+            }
         }
 
         public MainWindow()
         {
             LoadWindowPosition();
             InitializeComponent();
+            ApplyBackgroundState();
+
             DataContext = this;
 
             // Настраиваем и запускаем таймер для поддержания окна Topmost
-            _topmostTimer.Interval = TimeSpan.FromSeconds(3); 
+            _topmostTimer.Interval = TimeSpan.FromSeconds(3);
             _topmostTimer.Tick += TopmostTimer_Tick;
             _topmostTimer.Start();
+
+            // this.Background = new SolidColorBrush(Color.FromArgb(255, 6, 27, 61));
 
             // this.Deactivated += Window_Deactivated;
 
@@ -569,6 +602,20 @@ namespace DollOverlay
             }
         }
 
+        private void ToggleBackgroundButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (isBackgroundOpaque)
+            {
+                this.Background = new SolidColorBrush(Colors.White) { Opacity = 0.01 };
+                isBackgroundOpaque = false;
+            }
+            else
+            {
+                this.Background = new SolidColorBrush(Color.FromArgb(255, 6, 27, 61));
+                isBackgroundOpaque = true;
+            }
+        }
+
         private void SaveWindowPosition()
         {
             try
@@ -578,8 +625,11 @@ namespace DollOverlay
                     Top = this.Top,
                     Left = this.Left,
                     Height = this.Height,
-                    Width = this.Width
+                    Width = this.Width,
+                    SelectedTableId = _selectedTableId,
+                    IsBackgroundOpaque = isBackgroundOpaque
                 };
+
                 var json = JsonSerializer.Serialize(settings);
                 File.WriteAllText(SettingsFileName, json);
             }
@@ -603,6 +653,8 @@ namespace DollOverlay
                         this.Left = settings.Left;
                         this.Height = settings.Height;
                         this.Width = settings.Width;
+                        _selectedTableId = settings.SelectedTableId;
+                        isBackgroundOpaque = settings.IsBackgroundOpaque;
                     }
                 }
                 catch (Exception ex)
@@ -615,6 +667,20 @@ namespace DollOverlay
             {
                 this.Height = 500;
                 this.Width = 400;
+            }
+        }
+
+        private void ApplyBackgroundState()
+        {
+            if (isBackgroundOpaque)
+            {
+                // Если фон должен быть непрозрачным
+                this.Background = new SolidColorBrush(Color.FromArgb(255, 6, 27, 61));
+            }
+            else
+            {
+                // Если фон должен быть прозрачным
+                this.Background = new SolidColorBrush(Colors.White) { Opacity = 0.01 };
             }
         }
 
@@ -654,7 +720,7 @@ namespace DollOverlay
         {
             StatusTextBlock.Text = "";
             SwitchToEmailLogin();
-        
+
         }
 
         private void SwitchToTokenLogin(object sender, RoutedEventArgs e)
@@ -734,6 +800,16 @@ namespace DollOverlay
                                                      .ToList();
                     TablesDataGrid.ItemsSource = _allTables;
                     SwitchToTablesSelection();
+
+                    if (!string.IsNullOrEmpty(_selectedTableId))
+                    {
+                        var savedTable = _allTables.FirstOrDefault(t => t.id == _selectedTableId);
+                        if (savedTable != null)
+                        {
+                            HandleTableSelectionAsync(savedTable);
+                        }
+                    }
+
                     _refreshTimer.Start();
                 }
                 else
@@ -863,30 +939,46 @@ namespace DollOverlay
         {
             if (selectedTable?.id != null)
             {
+                _selectedTableId = selectedTable.id; 
+
                 var tableData = _allTables?.FirstOrDefault(t => t.id == selectedTable.id);
 
                 if (tableData?.castles != null)
                 {
                     originalCastles = new List<Castle>(tableData.castles);
-                    hiddenLevels.Clear();
+                    LoadButtonSettings(); // Загружаем состояние кнопок
+                    UpdateButtonAppearance(); // Обновляем их внешний вид
                     ApplyFilterAndSort();
                 }
-
-
                 await ConnectAndJoinTableAsync(selectedTable.id);
             }
         }
 
         private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
-            ScrollViewer scv = (ScrollViewer)sender;
-            scv.ScrollToVerticalOffset(scv.VerticalOffset - e.Delta);
-            e.Handled = true;
+            var scrollViewer = sender as ScrollViewer;
+            
+            if (scrollViewer != null)
+            {
+                // Проверяем направление прокрутки
+                if (e.Delta > 0)
+                {
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
+                }
+                else
+                {
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
+                }
+
+                // Помечаем событие как обработанное, чтобы оно не дошло до DataGrid
+                e.Handled = true;
+            }
         }
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
             await DisconnectWebSocket();
+            _selectedTableId = null;
             TablesDataGrid.SelectedItem = null;
             SwitchToTablesSelection();
         }
@@ -934,14 +1026,12 @@ namespace DollOverlay
                     hiddenLevels.Remove(level);
                     button.Background = Brushes.Transparent;
                     button.Foreground = Brushes.White;
-                    button.FontWeight = FontWeights.Bold;
                 }
                 else
                 {
                     hiddenLevels.Add(level);
                     button.Background = Brushes.Transparent;
                     button.Foreground = Brushes.DarkSlateGray;
-                    button.FontWeight = FontWeights.Normal;
                 }
 
                 ApplyFilterAndSort();
@@ -993,6 +1083,47 @@ namespace DollOverlay
 
                 ApplyFilterAndSort();
             });
+        }
+
+        private void DataGrid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            // Находим родительский ScrollViewer
+            var scrollViewer = FindVisualChild<ScrollViewer>(TablesDataGrid);
+
+            if (scrollViewer != null)
+            {
+                // Проверяем направление прокрутки
+                if (e.Delta > 0)
+                {
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
+                }
+                else
+                {
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
+                }
+
+                // Помечаем событие как обработанное, чтобы оно не дошло до других элементов
+                e.Handled = true;
+            }
+        }
+
+        // Вспомогательный метод для поиска дочерних элементов в визуальном дереве
+        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typedChild)
+                {
+                    return typedChild;
+                }
+                var foundChild = FindVisualChild<T>(child);
+                if (foundChild != null)
+                {
+                    return foundChild;
+                }
+            }
+            return null;
         }
 
         private void SortCastles()
@@ -1069,11 +1200,11 @@ namespace DollOverlay
             }
             catch (OperationCanceledException)
             {
-                
+
             }
             catch (Exception ex)
             {
-                
+
             }
         }
 
@@ -1130,7 +1261,7 @@ namespace DollOverlay
                 }
                 catch (Exception ex)
                 {
-                   
+
                 }
             }
         }
@@ -1138,6 +1269,7 @@ namespace DollOverlay
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             SaveWindowPosition();
+            SaveButtonSettings(); // Сохраняем состояние кнопок
 
             if (_webSocket.State == WebSocketState.Open)
             {
@@ -1147,6 +1279,72 @@ namespace DollOverlay
             _webSocket?.Dispose();
             _httpClient?.Dispose();
             _refreshTimer.Stop();
+        }
+
+        private void SaveButtonSettings()
+        {
+            try
+            {
+                var settings = new ButtonSettings
+
+                {
+                    HiddenLevels = this.hiddenLevels
+                };
+
+                var json = JsonSerializer.Serialize(settings);
+                File.WriteAllText(ButtonSettingsFileName, json);
+            }
+            catch (Exception ex)
+            {
+                // Игнорируем ошибки сохранения
+            }
+        }
+
+        private void LoadButtonSettings()
+        {
+            if (File.Exists(ButtonSettingsFileName))
+            {
+                try
+                {
+                    var json = File.ReadAllText(ButtonSettingsFileName);
+                    var settings = JsonSerializer.Deserialize<ButtonSettings>(json);
+                    if (settings != null)
+                    {
+                        this.hiddenLevels = settings.HiddenLevels ?? new List<int>();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.hiddenLevels = new List<int>();
+                }
+            }
+            else
+            {
+                this.hiddenLevels = new List<int>();
+            }
+        }
+        
+        private void UpdateButtonAppearance()
+        {
+            // Найдем StackPanel, содержащий кнопки
+            if (TimeButtonsPanel == null) return;
+
+            foreach (var child in TimeButtonsPanel.Children)
+            {
+                if (child is Button button && button.Tag != null && int.TryParse(button.Tag.ToString(), out int level))
+                {
+                    if (hiddenLevels.Contains(level))
+                    {
+                        button.Background = Brushes.Transparent;
+                        button.Foreground = Brushes.DarkSlateGray;
+                    }
+                    else
+                    {
+                        button.Background = Brushes.Transparent;
+                        button.Foreground = Brushes.White;
+                    }
+                }
+            }
         }
     }
 
@@ -1165,6 +1363,15 @@ namespace DollOverlay
         {
             throw new System.NotImplementedException();
         }
+    }
+
+    public class AppConfiguration
+    {
+        public double Top { get; set; }
+        public double Left { get; set; }
+        public double Height { get; set; }
+        public double Width { get; set; }
+        public string? SelectedTableId { get; set; }
     }
 
     public class WhiteTimeColorConverter : IValueConverter
