@@ -59,22 +59,38 @@ namespace DollOverlay
     }
 
     // Модели для получения списка таблиц
-    public class TablesResponse
+    public class StaticCastleInfo
+    {
+        public int id { get; set; }
+        [JsonPropertyName("castleLvl")]
+        public int? lvl { get; set; }
+        [JsonPropertyName("castleNameRu")]
+        public string? nameRu { get; set; }
+        [JsonPropertyName("continentNameRu")]
+        public string? continentNameRu { get; set; }
+    }
+
+    public class UserTableInfo
+    {
+        public string? id { get; set; }
+        [JsonPropertyName("name")]
+        public string? name { get; set; }
+        public string? roleRu { get; set; }
+    }
+
+    public class AllTablesData
+    {
+        public List<StaticCastleInfo>? @static { get; set; }
+        public List<UserTableInfo>? tables { get; set; }
+    }
+
+    public class AllTablesResponse
     {
         public bool success { get; set; }
-        public TablesResponseData? data { get; set; }
+        public AllTablesData? data { get; set; }
     }
 
-    public class TablesResponseData
-    {
-        public List<TablesWrapper>? tables { get; set; }
-    }
-
-    public class TablesWrapper
-    {
-        public DynamicTableInfo? dynamic { get; set; }
-    }
-
+    // Эта модель теперь будет использоваться для данных конкретной таблицы
     public class DynamicTableInfo
     {
         [JsonPropertyName("id")]
@@ -87,7 +103,23 @@ namespace DollOverlay
         public List<Castle>? castles { get; set; }
     }
 
-    // Модели для WebSocket-сообщений
+    public class SingleTableDataWrapper
+    {
+        public DynamicTableInfo? dynamic { get; set; }
+        // другие поля, как users, clans, banned можно добавить при необходимости
+    }
+
+    public class SingleTableData
+    {
+        public SingleTableDataWrapper? data { get; set; }
+    }
+
+    public class SingleTableResponse
+    {
+        public bool success { get; set; }
+        public SingleTableData? data { get; set; }
+    }
+
     public class WebSocketAuthMessage
     {
         public string? type { get; set; } = "auth";
@@ -100,13 +132,17 @@ namespace DollOverlay
         public string? tableId { get; set; }
     }
 
+    public class WebSocketUpdatePayload
+    {
+        public CastleUpdateData? castleData { get; set; }
+        // actionData можно не добавлять, если оно не используется
+    }
+
     public class WebSocketDataUpdate
     {
         public string? type { get; set; }
         public string? tableId { get; set; }
-        public string? castleId { get; set; }
-        public CastleUpdateData? castleData { get; set; }
-        public UserData? userData { get; set; }
+        public WebSocketUpdatePayload? data { get; set; }
     }
 
     public class CastleUpdateData
@@ -464,13 +500,18 @@ namespace DollOverlay
         private readonly HttpClient _httpClient = new HttpClient();
         private ClientWebSocket _webSocket = new ClientWebSocket();
         private CancellationTokenSource _cts = new CancellationTokenSource();
-        private List<DynamicTableInfo>? _allTables;
+        private List<UserTableInfo>? _userTables;
+        private List<StaticCastleInfo>? _staticCastleData;
 
         private readonly ObservableCollection<Castle> _castlesObservable = new ObservableCollection<Castle>();
         private List<Castle> originalCastles = new List<Castle>(); // Сохраняем полную коллекцию
         private List<int> hiddenLevels = new List<int>(); // Список уровней для фильтрации
 
         private readonly DispatcherTimer _refreshTimer = new DispatcherTimer();
+
+        // private const string AuthUrl = "http://localhost:1337/api/login";
+        // private const string TablesUrl = "http://localhost:1337/api/table";
+        // private const string WebSocketUrl = "ws://localhost:8099/ws";
 
         private const string AuthUrl = "https://sphere-doll.ru/api/login";
         private const string TablesUrl = "https://sphere-doll.ru/api/table";
@@ -790,20 +831,21 @@ namespace DollOverlay
             try
             {
                 _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
-                var tablesResponse = await _httpClient.GetFromJsonAsync<TablesResponse>(TablesUrl);
+
+                var tablesResponse = await _httpClient.GetFromJsonAsync<AllTablesResponse>(TablesUrl);
 
                 if (tablesResponse?.success == true && tablesResponse.data?.tables != null)
                 {
-                    _allTables = tablesResponse.data.tables
-                                                     .Where(t => t.dynamic != null)
-                                                     .Select(t => t.dynamic)
-                                                     .ToList();
-                    TablesDataGrid.ItemsSource = _allTables;
+                    _userTables = tablesResponse.data.tables;
+                    _staticCastleData = tablesResponse.data.@static;
+
+                    TablesDataGrid.ItemsSource = _userTables;
                     SwitchToTablesSelection();
 
                     if (!string.IsNullOrEmpty(_selectedTableId))
                     {
-                        var savedTable = _allTables.FirstOrDefault(t => t.id == _selectedTableId);
+                        // Ищем сохраненную таблицу в новом списке
+                        var savedTable = _userTables?.FirstOrDefault(t => t.id == _selectedTableId);
                         if (savedTable != null)
                         {
                             HandleTableSelectionAsync(savedTable);
@@ -893,30 +935,30 @@ namespace DollOverlay
         private async Task GetTablesAsync()
         {
             if (_token == null) return;
-            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
 
-            try
-            {
-                var tablesResponse = await _httpClient.GetFromJsonAsync<TablesResponse>(TablesUrl);
-
-                if (tablesResponse?.success == true && tablesResponse.data?.tables != null)
+                try
                 {
-                    _allTables = tablesResponse.data.tables
-                                                     .Where(t => t.dynamic != null)
-                                                     .Select(t => t.dynamic)
-                                                     .ToList();
+                    // Используем новую модель AllTablesResponse
+                    var tablesResponse = await _httpClient.GetFromJsonAsync<AllTablesResponse>(TablesUrl);
 
-                    TablesDataGrid.ItemsSource = _allTables;
+                    if (tablesResponse?.success == true && tablesResponse.data != null)
+                    {
+                        // Сохраняем оба списка
+                        _userTables = tablesResponse.data.tables;
+                        _staticCastleData = tablesResponse.data.@static;
+
+                        TablesDataGrid.ItemsSource = _userTables;
+                    }
                 }
-            }
-            catch (HttpRequestException ex)
-            {
-                MessageBox.Show($"Ошибка при получении списка таблиц: {ex.Message}");
-            }
-            catch (JsonException ex)
-            {
-                MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}");
-            }
+                catch (HttpRequestException ex)
+                {
+                    MessageBox.Show($"Ошибка при получении списка таблиц: {ex.Message}");
+                }
+                catch (JsonException ex)
+                {
+                    MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}");
+                }
         }
 
         private void TablesDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -925,7 +967,7 @@ namespace DollOverlay
 
             if (row != null)
             {
-                var selectedTable = row.DataContext as DynamicTableInfo;
+                var selectedTable = row.DataContext as UserTableInfo;
 
                 if (selectedTable != null)
                 {
@@ -935,22 +977,59 @@ namespace DollOverlay
             }
         }
 
-        private async void HandleTableSelectionAsync(DynamicTableInfo selectedTable)
+        private async void HandleTableSelectionAsync(UserTableInfo selectedTable)
         {
-            if (selectedTable?.id != null)
+            if (selectedTable?.id == null || _staticCastleData == null) return;
+
+            IsLoading = true;
+            _selectedTableId = selectedTable.id;
+
+            try
             {
-                _selectedTableId = selectedTable.id; 
+                var specificTableUrl = $"{TablesUrl}/{selectedTable.id}";
+                var response = await _httpClient.GetFromJsonAsync<SingleTableResponse>(specificTableUrl);
 
-                var tableData = _allTables?.FirstOrDefault(t => t.id == selectedTable.id);
-
-                if (tableData?.castles != null)
+                if (response?.success == true && response.data?.data?.dynamic?.castles != null)
                 {
-                    originalCastles = new List<Castle>(tableData.castles);
-                    LoadButtonSettings(); // Загружаем состояние кнопок
-                    UpdateButtonAppearance(); // Обновляем их внешний вид
+                    var dynamicCastles = response.data.data.dynamic.castles;
+                    var combinedCastles = new List<Castle>();
+
+                    foreach (var staticInfo in _staticCastleData)
+                    {
+                        var dynamicInfo = dynamicCastles.FirstOrDefault(c => c.id == staticInfo.id);
+                        var castle = new Castle
+                        {
+                            id = staticInfo.id,
+                            lvl = staticInfo.lvl,
+                            nameRu = staticInfo.nameRu,
+                            continentNameRu = staticInfo.continentNameRu,
+                            // Данные из динамического запроса (если они есть)
+                            fillingDatetime = dynamicInfo?.fillingDatetime,
+                            fillingLvl = dynamicInfo?.fillingLvl,
+                            fillingSpheretime = dynamicInfo?.fillingSpheretime,
+                            ownerClan = dynamicInfo?.ownerClan,
+                            commentary = dynamicInfo?.commentary,
+                        };
+                        combinedCastles.Add(castle);
+                    }
+                    
+                    originalCastles = combinedCastles;
+                    
+                    LoadButtonSettings();
+                    UpdateButtonAppearance();
                     ApplyFilterAndSort();
+
+                    // 3. Подключаемся к WebSocket
+                    await ConnectAndJoinTableAsync(selectedTable.id);
                 }
-                await ConnectAndJoinTableAsync(selectedTable.id);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Не удалось загрузить данные таблицы: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
@@ -1054,31 +1133,33 @@ namespace DollOverlay
 
         private void UpdateDataGrid(WebSocketDataUpdate? update)
         {
-            if (update?.castleId == null) return;
+            if (update?.data?.castleData == null) return;
 
             Dispatcher.Invoke(() =>
             {
-                if (int.TryParse(update.castleId, out int castleId))
-                {
-                    var existingCastleInObservable = _castlesObservable.FirstOrDefault(c => c.id == castleId);
-                    var existingCastleInOriginal = originalCastles.FirstOrDefault(c => c.id == castleId);
+                int castleId = update.data.castleData.id; // Получаем ID отсюда
 
-                    if (existingCastleInObservable != null)
-                    {
-                        existingCastleInObservable.fillingLvl = update.castleData?.fillingLvl;
-                        existingCastleInObservable.fillingSpheretime = update.castleData?.fillingSpheretime;
-                        existingCastleInObservable.commentary = update.castleData?.commentary;
-                        existingCastleInObservable.ownerClan = update.castleData?.ownerClan;
-                        existingCastleInObservable.fillingDatetime = update.castleData?.fillingDatetime;
-                    }
-                    if (existingCastleInOriginal != null)
-                    {
-                        existingCastleInOriginal.fillingLvl = update.castleData?.fillingLvl;
-                        existingCastleInOriginal.fillingSpheretime = update.castleData?.fillingSpheretime;
-                        existingCastleInOriginal.commentary = update.castleData?.commentary;
-                        existingCastleInOriginal.ownerClan = update.castleData?.ownerClan;
-                        existingCastleInOriginal.fillingDatetime = update.castleData?.fillingDatetime;
-                    }
+                var existingCastleInObservable = _castlesObservable.FirstOrDefault(c => c.id == castleId);
+                var existingCastleInOriginal = originalCastles.FirstOrDefault(c => c.id == castleId);
+                
+                // Получаем данные из вложенного объекта
+                var castleData = update.data.castleData;
+
+                if (existingCastleInObservable != null)
+                {
+                    existingCastleInObservable.fillingLvl = castleData.fillingLvl;
+                    existingCastleInObservable.fillingSpheretime = castleData.fillingSpheretime;
+                    existingCastleInObservable.commentary = castleData.commentary;
+                    existingCastleInObservable.ownerClan = castleData.ownerClan;
+                    existingCastleInObservable.fillingDatetime = castleData.fillingDatetime;
+                }
+                if (existingCastleInOriginal != null)
+                {
+                    existingCastleInOriginal.fillingLvl = castleData.fillingLvl;
+                    existingCastleInOriginal.fillingSpheretime = castleData.fillingSpheretime;
+                    existingCastleInOriginal.commentary = castleData.commentary;
+                    existingCastleInOriginal.ownerClan = castleData.ownerClan;
+                    existingCastleInOriginal.fillingDatetime = castleData.fillingDatetime;
                 }
 
                 ApplyFilterAndSort();
@@ -1193,7 +1274,7 @@ namespace DollOverlay
             try
             {
                 await _webSocket.ConnectAsync(new Uri(WebSocketUrl), _cts.Token);
-                // await SendWebSocketAuthMessage();
+                SendWebSocketAuthMessage();
                 await SendWebSocketJoinMessage(tableId);
                 SwitchToMainContent();
                 await ReceiveWebSocketMessagesAsync();

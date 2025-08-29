@@ -323,7 +323,7 @@
                       PreviewMouseLeftButtonDown="TablesDataGrid_PreviewMouseLeftButtonDown">
                 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Выберите таблицу" Binding="{Binding tableName}" Width="*"/>
+                    <DataGridTextColumn Header="Выберите таблицу" Binding="{Binding name}" Width="*"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
