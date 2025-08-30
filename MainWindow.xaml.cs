@@ -90,6 +90,28 @@ namespace DollOverlay
         public AllTablesData? data { get; set; }
     }
 
+    public class TableCastle
+    {
+        public int id { get; set; }
+        public int lvl { get; set; }
+        public string? nameEng { get; set; }
+        public string? nameRu { get; set; }
+        public string? continentNameEng { get; set; }
+        public string? continentNameRu { get; set; }
+        public string? fillingDatetime { get; set; }
+        public int? fillingLvl { get; set; }
+        public string? fillingSpheretime { get; set; }
+        public string? ownerClan { get; set; }
+        public string? commentary { get; set; }
+        public string? lastChangeUser { get; set; }
+    }
+
+    public class Clan
+    {
+        public string? id { get; set; } // UUID, поэтому тип string
+        public string? name { get; set; }
+    }
+
     // Эта модель теперь будет использоваться для данных конкретной таблицы
     public class DynamicTableInfo
     {
@@ -106,7 +128,7 @@ namespace DollOverlay
     public class SingleTableDataWrapper
     {
         public DynamicTableInfo? dynamic { get; set; }
-        // другие поля, как users, clans, banned можно добавить при необходимости
+        public List<Clan>? clans { get; set; } 
     }
 
     public class SingleTableData
@@ -124,6 +146,39 @@ namespace DollOverlay
     {
         public string? type { get; set; } = "auth";
         public string? token { get; set; }
+    }
+
+    public class CastleUpdateDto
+    {
+        [JsonPropertyName("id")]
+        public int id { get; set; }
+        
+        [JsonPropertyName("fillingDatetime")]
+        public long? fillingDatetime { get; set; }
+        
+        [JsonPropertyName("fillingLvl")]
+        public string? fillingLvl { get; set; }
+        
+        [JsonPropertyName("fillingSpheretime")]
+        public string? fillingSpheretime { get; set; }
+        
+        [JsonPropertyName("ownerClan")]
+        public string? ownerClan { get; set; }
+        
+        [JsonPropertyName("commentary")]
+        public string? commentary { get; set; }
+        
+        [JsonPropertyName("tableId")]
+        public string? tableId { get; set; }
+        
+        [JsonPropertyName("name")]
+        public string? name { get; set; }
+    }
+    
+    public class CastleUpdateRequest
+    {
+        [JsonPropertyName("castle")]
+        public CastleUpdateDto? Castle { get; set; }
     }
 
     public class WebSocketJoinMessage
@@ -171,7 +226,7 @@ namespace DollOverlay
             { 15, new Dictionary<int, double> { { 1, 7.0 }, { 2, 8.0 }, { 3, 8.0 }, { 4, 8.0 }, { 5, 8.0 }, { 6, 8.0 }, { 7, 8.0 } } },
             { 30, new Dictionary<int, double> { { 1, 7.0 }, { 2, 11.0 }, { 3, 12.5 }, { 4, 12.5 }, { 5, 12.5 }, { 6, 12.5 }, { 7, 12.5 } } },
             { 45, new Dictionary<int, double> { { 1, 7.0 }, { 2, 11.0 }, { 3, 15.0 }, { 4, 17.0 }, { 5, 17.0 }, { 6, 17.0 }, { 7, 17.0 } } },
-            { 60, new Dictionary<int, double> { { 1, 7.0 }, { 2, 11.0 }, { 3, 15.0 }, { 4, 18.0 }, { 5, 20.0 }, { 6, 20.5 }, { 7, 24.0 } } },
+            { 60, new Dictionary<int, double> { { 1, 7.0 }, { 2, 11.0 }, { 3, 15.0 }, { 4, 18.0 }, { 5, 20.0 }, { 6, 20.5 }, { 7, 20.5 } } },
             { 75, new Dictionary<int, double> { { 1, 7.0 }, { 2, 11.0 }, { 3, 15.0 }, { 4, 18.0 }, { 5, 20.0 }, { 6, 21.0 }, { 7, 23.0 } } },
             { 90, new Dictionary<int, double> { { 1, 7.0 }, { 2, 11.0 }, { 3, 15.0 }, { 4, 18.0 }, { 5, 20.0 }, { 6, 21.0 }, { 7, 24.0 } } }
         };
@@ -502,9 +557,12 @@ namespace DollOverlay
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private List<UserTableInfo>? _userTables;
         private List<StaticCastleInfo>? _staticCastleData;
+        private List<Castle> originalCastles = new List<Castle>();
+        private List<Clan> _clans = new List<Clan>();
+        private UserTableInfo _selectedTable;
+        private Castle _selectedCastle;
 
         private readonly ObservableCollection<Castle> _castlesObservable = new ObservableCollection<Castle>();
-        private List<Castle> originalCastles = new List<Castle>(); // Сохраняем полную коллекцию
         private List<int> hiddenLevels = new List<int>(); // Список уровней для фильтрации
 
         private readonly DispatcherTimer _refreshTimer = new DispatcherTimer();
@@ -545,6 +603,222 @@ namespace DollOverlay
         private void NotifyPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+        
+        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            // Приводим отправителя события к типу TextBox
+            if (sender is TextBox textBox)
+            {
+                // Стираем содержимое
+                textBox.Text = string.Empty;
+            }
+        }
+
+        // Это обновленная функция, которая срабатывает при клике на замок в таблице
+        private void CastlesDataGrid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var row = ItemsControl.ContainerFromElement(CastlesDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
+
+            if (row != null)
+            {
+                var castle = row.Item as Castle;
+
+                if (castle != null)
+                {
+                    _selectedCastle = castle;
+
+                    // Заполняем элементы управления на форме
+                    CastleNameTextBlock.Text = castle.nameRu;
+                    FillingLvlComboBox.ItemsSource = new List<string> { "7", "6", "5", "4", "3", "2", "1" };
+                    FillingLvlComboBox.SelectedIndex = 0;
+
+                    FillingDateComboBox.ItemsSource = new List<string> { "Сегодня", "Вчера", "Позавчера" };
+                    FillingDateComboBox.SelectedIndex = 0;
+
+
+                    if (_clans != null)
+                    {
+                        ClanComboBox.ItemsSource = _clans;
+                        ClanComboBox.DisplayMemberPath = "name";
+                        ClanComboBox.SelectedValuePath = "id";
+
+                        // Находим клан по ID и устанавливаем его как выбранный элемент
+                        // Это решает вашу первую задачу (выбор по умолчанию)
+                        var selectedClan = _clans.FirstOrDefault(c => c.id == castle.ownerClan);
+                        if (selectedClan != null)
+                        {
+                            ClanComboBox.SelectedItem = selectedClan;
+                        }
+                        else
+                        {
+                            // Если клана не найдено или castle.ownerClan пуст, сбрасываем выбор
+                            ClanComboBox.SelectedItem = null;
+                        }
+                    }
+
+                    TablesScrollViewer.Visibility = Visibility.Collapsed;
+                    EditCastleScroll.Visibility = Visibility.Visible;
+                    FillingTimeTextBox.Focus();
+                }
+            }
+        }
+
+        private void FillingTimeTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var text = FillingTimeTextBox.Text.Trim();
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            // Заменяем точки и пробелы на двоеточия для унификации формата
+            text = text.Replace('.', ':').Replace(' ', ':');
+
+            // Проверяем, является ли строка валидным временем
+            if (TimeSpan.TryParse(text, out TimeSpan parsedTime))
+            {
+                // Если да, форматируем в hh:mm и обновляем Textbox
+                FillingTimeTextBox.Text = parsedTime.ToString(@"hh\:mm");
+            }
+            else
+            {
+                // Если нет, выводим ошибку
+                MessageBox.Show("Введите время в правильном формате: hh mm, hh:mm или hh.mm", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Очищаем поле, чтобы пользователь мог ввести заново
+                FillingTimeTextBox.Text = string.Empty;
+            }
+        }
+
+        // Это обновленная функция для сохранения изменений, привязанная к кнопке "Отправить"
+        private async void SaveCastleButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClearError();
+
+            if (_selectedCastle == null)
+            {
+                ShowError("Замок не выбран");
+                return;
+            }
+
+            // ВАЛИДАЦИЯ ВРЕМЕНИ
+            var timeText = FillingTimeTextBox.Text.Trim();
+            if (string.IsNullOrEmpty(timeText))
+            {
+                ShowError("Введите время");
+                return;
+            }
+            if (!TimeSpan.TryParse(timeText, out TimeSpan selectedTime))
+            {
+                ShowError("Введите время в одном из форматов: hh:mm, hh.mm или hh mm.");
+                return;
+            }
+
+            // ОБРАБОТКА ДАТЫ И СОЗДАНИЕ DTO
+            DateTime selectedDate;
+            string selectedDateStr = FillingDateComboBox.SelectedItem?.ToString();
+            if (selectedDateStr == "Сегодня")
+            {
+                selectedDate = DateTime.Now.Date;
+            }
+            else if (selectedDateStr == "Вчера")
+            {
+                selectedDate = DateTime.Now.AddDays(-1).Date;
+            }
+            else // Позавчера
+            {
+                selectedDate = DateTime.Now.AddDays(-2).Date;
+            }
+
+            // ВАЛИДАЦИЯ КЛАНА
+            if (ClanComboBox.SelectedItem == null)
+            {
+                ShowError("Выберите клан");
+                return;
+            }
+
+            DateTime combinedDateTime = selectedDate.Add(selectedTime);
+            var unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var unixTimestamp = (long)(combinedDateTime.ToUniversalTime() - unixEpoch).TotalMilliseconds;
+
+            // Создаем DTO для вложенного объекта
+            var castleDto = new CastleUpdateDto
+            {
+                id = _selectedCastle.id,
+                fillingLvl = FillingLvlComboBox.Text,
+                ownerClan = ((Clan)ClanComboBox.SelectedItem).id,
+                commentary = CommentaryTextBox.Text.Trim(),
+                fillingSpheretime = FillingSpheretimeTextBox.Text.Trim(),
+                fillingDatetime = unixTimestamp,
+                tableId = _selectedTableId,
+                name = _selectedCastle.nameRu
+            };
+            
+            var request = new CastleUpdateRequest
+            {
+                Castle = castleDto
+            };
+
+            try
+            {
+                await UpdateCastleOnServer(request);
+                ClearFormFields();
+                EditCastleScroll.Visibility = Visibility.Collapsed;
+                TablesScrollViewer.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Не удалось сохранить изменения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Просто скрываем форму редактирования и показываем основное окно
+            EditCastleScroll.Visibility = Visibility.Collapsed;
+            TablesScrollViewer.Visibility = Visibility.Visible;
+        }
+
+        private async Task UpdateCastleOnServer(CastleUpdateRequest request)
+        {
+            var jsonPayload = JsonSerializer.Serialize(request);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            if (string.IsNullOrEmpty(_token))
+            {
+                throw new InvalidOperationException("Токен авторизации не установлен.");
+            }
+
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+            
+            var response = await _httpClient.PostAsync($"{TablesUrl}/{_selectedTableId}/save-castle", content);
+            response.EnsureSuccessStatusCode();
+            
+        }
+
+        private void FillingSpheretimeTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var text = FillingSpheretimeTextBox.Text.Trim();
+            if (string.IsNullOrEmpty(text))
+            {
+                return; // Поле пустое, валидация не нужна
+            }
+
+            // Заменяем точки и пробелы на двоеточия для унификации
+            text = text.Replace('.', ':').Replace(' ', ':');
+
+            // Проверяем, является ли строка валидным временем
+            if (TimeSpan.TryParse(text, out TimeSpan parsedTime))
+            {
+                // Если да, форматируем в hh:mm и обновляем Textbox
+                FillingSpheretimeTextBox.Text = parsedTime.ToString(@"hh\:mm");
+            }
+            else
+            {
+                // Если нет, очищаем поле
+                FillingSpheretimeTextBox.Text = string.Empty;
+                ShowError("Введите СВ в одном из форматов: hh:mm, hh.mm или hh mm.");
+            }
         }
 
         private void TopmostTimer_Tick(object sender, EventArgs e)
@@ -680,6 +954,13 @@ namespace DollOverlay
             }
         }
 
+        private void ClearFormFields()
+        {
+            FillingTimeTextBox.Text = string.Empty;
+            FillingSpheretimeTextBox.Text = string.Empty;
+            CommentaryTextBox.Text = string.Empty;
+        }
+
         private void LoadWindowPosition()
         {
             if (File.Exists(SettingsFileName))
@@ -776,7 +1057,8 @@ namespace DollOverlay
             EmailLoginPanel.Visibility = Visibility.Visible;
             TokenLoginPanel.Visibility = Visibility.Collapsed;
             TablesPanel.Visibility = Visibility.Collapsed;
-            MainContent.Visibility = Visibility.Collapsed;
+            TablesScrollViewer.Visibility = Visibility.Collapsed;
+            EditCastleScroll.Visibility = Visibility.Collapsed;
         }
 
         private void SwitchToTokenLogin()
@@ -785,7 +1067,8 @@ namespace DollOverlay
             EmailLoginPanel.Visibility = Visibility.Collapsed;
             TokenLoginPanel.Visibility = Visibility.Visible;
             TablesPanel.Visibility = Visibility.Collapsed;
-            MainContent.Visibility = Visibility.Collapsed;
+            TablesScrollViewer.Visibility = Visibility.Collapsed;
+            EditCastleScroll.Visibility = Visibility.Collapsed;
         }
 
         private void LoadTokenFromFile()
@@ -808,7 +1091,7 @@ namespace DollOverlay
 
         private async void RefreshTimer_Tick(object? sender, EventArgs e)
         {
-            if (MainContent.Visibility == Visibility.Visible)
+            if (TablesScrollViewer.Visibility == Visibility.Visible)
             {
                 // Обновляем свойства для всех замков в оригинальной коллекции
                 foreach (var castle in originalCastles)
@@ -963,16 +1246,17 @@ namespace DollOverlay
 
         private void TablesDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var row = ItemsControl.ContainerFromElement(TablesDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
-
+             var row = ItemsControl.ContainerFromElement(TablesDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
             if (row != null)
             {
-                var selectedTable = row.DataContext as UserTableInfo;
-
+                var selectedTable = row.Item as UserTableInfo;
                 if (selectedTable != null)
                 {
                     HandleTableSelectionAsync(selectedTable);
-                    e.Handled = true;
+
+                    TablesPanel.Visibility = Visibility.Collapsed;
+                    TablesScrollViewer.Visibility = Visibility.Visible;
+                    EditCastleScroll.Visibility = Visibility.Collapsed;
                 }
             }
         }
@@ -991,6 +1275,9 @@ namespace DollOverlay
 
                 if (response?.success == true && response.data?.data?.dynamic?.castles != null)
                 {
+                    _selectedCastle = null;
+                    _clans = response.data.data.clans ?? new List<Clan>();
+
                     var dynamicCastles = response.data.data.dynamic.castles;
                     var combinedCastles = new List<Castle>();
 
@@ -1056,10 +1343,18 @@ namespace DollOverlay
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
+            _selectedCastle = null;
             await DisconnectWebSocket();
             _selectedTableId = null;
             TablesDataGrid.SelectedItem = null;
             SwitchToTablesSelection();
+        }
+
+        private async void BackFromEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            _selectedCastle = null;
+            ClearFormFields();
+            SwitchToMainContent();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -1067,25 +1362,41 @@ namespace DollOverlay
             this.Close();
         }
 
+        private void ShowError(string message)
+        {
+            EditErrorTextBlock.Text = message;
+            EditErrorTextBlock.Visibility = Visibility.Visible;
+        }
+
+        private void ClearError()
+        {
+            EditErrorTextBlock.Text = string.Empty;
+            EditErrorTextBlock.Visibility = Visibility.Collapsed;
+        }
+
         private void SwitchToTablesSelection()
         {
             LoginPanel.Visibility = Visibility.Collapsed;
             TablesPanel.Visibility = Visibility.Visible;
-            MainContent.Visibility = Visibility.Collapsed;
+            TablesScrollViewer.Visibility = Visibility.Collapsed;
+            EditCastleScroll.Visibility = Visibility.Collapsed;
         }
 
         private void SwitchToMainContent()
         {
             LoginPanel.Visibility = Visibility.Collapsed;
             TablesPanel.Visibility = Visibility.Collapsed;
-            MainContent.Visibility = Visibility.Visible;
+            TablesScrollViewer.Visibility = Visibility.Visible;
+            EditCastleScroll.Visibility = Visibility.Collapsed;
+            _selectedCastle = null;
         }
 
         private void SwitchToLoginPanel()
         {
             LoginPanel.Visibility = Visibility.Visible;
             TablesPanel.Visibility = Visibility.Collapsed;
-            MainContent.Visibility = Visibility.Collapsed;
+            TablesScrollViewer.Visibility = Visibility.Collapsed;
+            EditCastleScroll.Visibility = Visibility.Collapsed;
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
