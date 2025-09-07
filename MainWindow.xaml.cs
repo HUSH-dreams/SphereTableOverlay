@@ -20,6 +20,9 @@ using System.Windows.Threading;
 using System.Windows.Media;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Animation;
+using System.Diagnostics;
+using System.Windows.Interop;
 
 namespace DollOverlay
 {
@@ -128,7 +131,7 @@ namespace DollOverlay
     public class SingleTableDataWrapper
     {
         public DynamicTableInfo? dynamic { get; set; }
-        public List<Clan>? clans { get; set; } 
+        public List<Clan>? clans { get; set; }
     }
 
     public class SingleTableData
@@ -152,29 +155,29 @@ namespace DollOverlay
     {
         [JsonPropertyName("id")]
         public int id { get; set; }
-        
+
         [JsonPropertyName("fillingDatetime")]
         public long? fillingDatetime { get; set; }
-        
+
         [JsonPropertyName("fillingLvl")]
         public string? fillingLvl { get; set; }
-        
+
         [JsonPropertyName("fillingSpheretime")]
         public string? fillingSpheretime { get; set; }
-        
+
         [JsonPropertyName("ownerClan")]
         public string? ownerClan { get; set; }
-        
+
         [JsonPropertyName("commentary")]
         public string? commentary { get; set; }
-        
+
         [JsonPropertyName("tableId")]
         public string? tableId { get; set; }
-        
+
         [JsonPropertyName("name")]
         public string? name { get; set; }
     }
-    
+
     public class CastleUpdateRequest
     {
         [JsonPropertyName("castle")]
@@ -561,9 +564,22 @@ namespace DollOverlay
         private List<Clan> _clans = new List<Clan>();
         private UserTableInfo _selectedTable;
         private Castle _selectedCastle;
+        [DllImport("user32.dll")]
+        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        // Константы для SetWindowPos
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
 
         private readonly ObservableCollection<Castle> _castlesObservable = new ObservableCollection<Castle>();
-        private List<int> hiddenLevels = new List<int>(); // Список уровней для фильтрации
+        private List<int> hiddenLevels = new List<int>();
 
         private readonly DispatcherTimer _refreshTimer = new DispatcherTimer();
 
@@ -585,7 +601,10 @@ namespace DollOverlay
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
+
+        private Storyboard? _loadingStoryboard;
         private bool _isLoading;
+        private bool _isSavedLoading;
         public bool IsLoading
         {
             get => _isLoading;
@@ -595,7 +614,92 @@ namespace DollOverlay
                 {
                     _isLoading = value;
                     NotifyPropertyChanged(nameof(IsLoading));
+                    UpdateLoadingAnimation();
                 }
+            }
+        }
+
+        public bool IsSavedLoading
+        {
+            get => _isSavedLoading;
+            set
+            {
+                if (_isSavedLoading != value)
+                {
+                    _isSavedLoading = value;
+                    NotifyPropertyChanged(nameof(IsSavedLoading));
+                    UpdateLoadingAnimation();
+                }
+            }
+        }
+        
+        // ========= НАЧАЛО ИЗМЕНЕНИЙ =========
+        
+        // Имя процесса игры для отслеживания
+        private const string TargetProcessName = "sphereclient";
+        private IntPtr _gameWindowHandle = IntPtr.Zero;
+
+        // Новая логика для таймера
+        private void TopmostTimer_Tick(object sender, EventArgs e)
+        {
+            // Пытаемся найти окно игры, если его хэндл еще не известен
+            if (_gameWindowHandle == IntPtr.Zero)
+            {
+                _gameWindowHandle = FindGameWindow();
+            }
+
+            // Если окно игры не найдено (например, игра не запущена), выходим
+            if (_gameWindowHandle == IntPtr.Zero)
+            {
+                // Можно периодически пытаться найти его снова, если игра может быть запущена позже
+                _gameWindowHandle = FindGameWindow();
+                if (_gameWindowHandle == IntPtr.Zero) return;
+            }
+
+            // Получаем хэндл текущего активного окна в системе
+            IntPtr activeWindowHandle = GetForegroundWindow();
+
+            // Сравниваем хэндл активного окна с хэндлом окна игры
+            if (activeWindowHandle == _gameWindowHandle)
+            {
+                // Если активно окно игры, делаем наш оверлей поверх него
+                IntPtr myWindowHandle = new WindowInteropHelper(this).Handle;
+                SetWindowPos(myWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            }
+        }
+
+        // Новая вспомогательная функция для поиска окна игры
+        private IntPtr FindGameWindow()
+        {
+            // Ищем процесс по имени (самый надежный способ)
+            Process[] processes = Process.GetProcessesByName(TargetProcessName);
+            if (processes.Length > 0)
+            {
+                // Возвращаем хэндл главного окна найденного процесса
+                return processes[0].MainWindowHandle;
+            }
+
+            // Если по имени процесса не нашли, можно попробовать найти по заголовку окна (менее надежно)
+            return FindWindow(null, "Sphere");
+        }
+        
+        // ========= КОНЕЦ ИЗМЕНЕНИЙ =========
+
+
+        public class BooleanToVisibilityConverter : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            {
+                if (value is bool boolValue)
+                {
+                    return boolValue ? Visibility.Visible : Visibility.Collapsed;
+                }
+                return Visibility.Visible;
+            }
+
+            public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -604,7 +708,7 @@ namespace DollOverlay
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
-        
+
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             // Приводим отправителя события к типу TextBox
@@ -753,7 +857,7 @@ namespace DollOverlay
                 tableId = _selectedTableId,
                 name = _selectedCastle.nameRu
             };
-            
+
             var request = new CastleUpdateRequest
             {
                 Castle = castleDto
@@ -790,10 +894,10 @@ namespace DollOverlay
             }
 
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
-            
+
             var response = await _httpClient.PostAsync($"{TablesUrl}/{_selectedTableId}/save-castle", content);
             response.EnsureSuccessStatusCode();
-            
+
         }
 
         private void FillingSpheretimeTextBox_LostFocus(object sender, RoutedEventArgs e)
@@ -820,8 +924,9 @@ namespace DollOverlay
                 ShowError("Введите СВ в одном из форматов: hh:mm, hh.mm или hh mm.");
             }
         }
-
-        private void TopmostTimer_Tick(object sender, EventArgs e)
+        
+        /* * Старая логика TopmostTimer_Tick была заменена новой выше
+         * private void TopmostTimer_Tick(object sender, EventArgs e)
         {
             // Этот "хак" заставляет окно всплыть на самый верх
             // Сначала делаем его не topmost, а затем сразу topmost.
@@ -833,6 +938,7 @@ namespace DollOverlay
             IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             SetForegroundWindow(hwnd);
         }
+        */
 
         private async Task PerformActionAfterDelay()
         {
@@ -877,6 +983,18 @@ namespace DollOverlay
             }
         }
 
+        private void UpdateLoadingAnimation()
+        {
+            if (IsLoading || IsSavedLoading)
+            {
+                _loadingStoryboard?.Begin();
+            }
+            else
+            {
+                _loadingStoryboard?.Stop();
+            }
+        }
+
         public MainWindow()
         {
             LoadWindowPosition();
@@ -884,9 +1002,11 @@ namespace DollOverlay
             ApplyBackgroundState();
 
             DataContext = this;
+            _loadingStoryboard = this.FindResource("LoadingAnimation") as Storyboard;
 
             // Настраиваем и запускаем таймер для поддержания окна Topmost
-            _topmostTimer.Interval = TimeSpan.FromSeconds(3);
+            // ========= ИЗМЕНЕНИЕ ИНТЕРВАЛА ТАЙМЕРА =========
+            _topmostTimer.Interval = TimeSpan.FromMilliseconds(500); // Было 3 секунды, стало 0.5 секунды для быстрой реакции
             _topmostTimer.Tick += TopmostTimer_Tick;
             _topmostTimer.Start();
 
@@ -903,6 +1023,8 @@ namespace DollOverlay
             LoadTokenFromFile();
             if (!string.IsNullOrEmpty(_token))
             {
+                IsSavedLoading = true;
+
                 Task.Run(async () =>
                 {
                     await Dispatcher.InvokeAsync(async () =>
@@ -914,6 +1036,8 @@ namespace DollOverlay
             else
             {
                 SwitchToEmailLogin();
+                IsLoading = false;
+                IsSavedLoading = false;
             }
         }
 
@@ -1108,31 +1232,33 @@ namespace DollOverlay
 
         private async Task TryLoadTablesWithTokenAsync()
         {
-            IsLoading = true;
-            StatusTextBlock.Text = "Загрузка данных с сохраненным токеном...";
+            StatusTextBlock.Text = "Загрузка данных...";
 
             try
             {
                 _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
-
                 var tablesResponse = await _httpClient.GetFromJsonAsync<AllTablesResponse>(TablesUrl);
 
                 if (tablesResponse?.success == true && tablesResponse.data?.tables != null)
                 {
                     _userTables = tablesResponse.data.tables;
                     _staticCastleData = tablesResponse.data.@static;
-
                     TablesDataGrid.ItemsSource = _userTables;
-                    SwitchToTablesSelection();
 
+                    // Проверяем, нужно ли загружать конкретную таблицу
                     if (!string.IsNullOrEmpty(_selectedTableId))
                     {
-                        // Ищем сохраненную таблицу в новом списке
-                        var savedTable = _userTables?.FirstOrDefault(t => t.id == _selectedTableId);
+                        var savedTable = _userTables.FirstOrDefault(t => t.id == _selectedTableId);
                         if (savedTable != null)
                         {
-                            HandleTableSelectionAsync(savedTable);
+                            // Загружаем данные таблицы, анимация продолжается
+                            await HandleTableSelectionAsync(savedTable);
                         }
+                    }
+                    else
+                    {
+                        // Просто показываем экран выбора таблиц
+                        SwitchToTablesSelection();
                     }
 
                     _refreshTimer.Start();
@@ -1141,20 +1267,21 @@ namespace DollOverlay
                 {
                     _token = null;
                     SaveTokenToFile(null);
-                    StatusTextBlock.Text = "Сохраненный токен недействителен. Пожалуйста, войдите снова.";
+                    StatusTextBlock.Text = "Сохраненный токен недействителен. Войдите снова.";
                     SwitchToLoginPanel();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при загрузке с токеном: {ex.Message}");
+                MessageBox.Show($"Ошибка при загрузке: {ex.Message}");
                 _token = null;
                 SaveTokenToFile(null);
                 SwitchToLoginPanel();
             }
             finally
             {
-                IsLoading = false;
+                // В любом случае убираем анимацию загрузки после завершения всех операций
+                IsSavedLoading = false;
                 StatusTextBlock.Text = "";
             }
         }
@@ -1218,35 +1345,35 @@ namespace DollOverlay
         private async Task GetTablesAsync()
         {
             if (_token == null) return;
-                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
 
-                try
-                {
-                    // Используем новую модель AllTablesResponse
-                    var tablesResponse = await _httpClient.GetFromJsonAsync<AllTablesResponse>(TablesUrl);
+            try
+            {
+                // Используем новую модель AllTablesResponse
+                var tablesResponse = await _httpClient.GetFromJsonAsync<AllTablesResponse>(TablesUrl);
 
-                    if (tablesResponse?.success == true && tablesResponse.data != null)
-                    {
-                        // Сохраняем оба списка
-                        _userTables = tablesResponse.data.tables;
-                        _staticCastleData = tablesResponse.data.@static;
+                if (tablesResponse?.success == true && tablesResponse.data != null)
+                {
+                    // Сохраняем оба списка
+                    _userTables = tablesResponse.data.tables;
+                    _staticCastleData = tablesResponse.data.@static;
 
-                        TablesDataGrid.ItemsSource = _userTables;
-                    }
+                    TablesDataGrid.ItemsSource = _userTables;
                 }
-                catch (HttpRequestException ex)
-                {
-                    MessageBox.Show($"Ошибка при получении списка таблиц: {ex.Message}");
-                }
-                catch (JsonException ex)
-                {
-                    MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}");
-                }
+            }
+            catch (HttpRequestException ex)
+            {
+                MessageBox.Show($"Ошибка при получении списка таблиц: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}");
+            }
         }
 
         private void TablesDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-             var row = ItemsControl.ContainerFromElement(TablesDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
+            var row = ItemsControl.ContainerFromElement(TablesDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
             if (row != null)
             {
                 var selectedTable = row.Item as UserTableInfo;
@@ -1261,7 +1388,7 @@ namespace DollOverlay
             }
         }
 
-        private async void HandleTableSelectionAsync(UserTableInfo selectedTable)
+        private async Task HandleTableSelectionAsync(UserTableInfo selectedTable)
         {
             if (selectedTable?.id == null || _staticCastleData == null) return;
 
@@ -1299,34 +1426,33 @@ namespace DollOverlay
                         };
                         combinedCastles.Add(castle);
                     }
-                    
+
                     originalCastles = combinedCastles;
-                    
+
                     LoadButtonSettings();
                     UpdateButtonAppearance();
                     ApplyFilterAndSort();
 
-                    // 3. Подключаемся к WebSocket
                     await ConnectAndJoinTableAsync(selectedTable.id);
                 }
             }
             catch (Exception ex)
             {
+                IsSavedLoading = false;
                 MessageBox.Show($"Не удалось загрузить данные таблицы: {ex.Message}");
             }
             finally
             {
-                IsLoading = false;
+                IsSavedLoading = false;
             }
         }
 
         private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             var scrollViewer = sender as ScrollViewer;
-            
+
             if (scrollViewer != null)
             {
-                // Проверяем направление прокрутки
                 if (e.Delta > 0)
                 {
                     scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
@@ -1452,7 +1578,7 @@ namespace DollOverlay
 
                 var existingCastleInObservable = _castlesObservable.FirstOrDefault(c => c.id == castleId);
                 var existingCastleInOriginal = originalCastles.FirstOrDefault(c => c.id == castleId);
-                
+
                 // Получаем данные из вложенного объекта
                 var castleData = update.data.castleData;
 
@@ -1588,15 +1714,16 @@ namespace DollOverlay
                 SendWebSocketAuthMessage();
                 await SendWebSocketJoinMessage(tableId);
                 SwitchToMainContent();
+                IsSavedLoading = false;
                 await ReceiveWebSocketMessagesAsync();
             }
             catch (OperationCanceledException)
             {
-
+                IsSavedLoading = false;
             }
             catch (Exception ex)
             {
-
+                IsSavedLoading = false;
             }
         }
 
@@ -1715,7 +1842,7 @@ namespace DollOverlay
                 this.hiddenLevels = new List<int>();
             }
         }
-        
+
         private void UpdateButtonAppearance()
         {
             // Найдем StackPanel, содержащий кнопки
@@ -1740,20 +1867,20 @@ namespace DollOverlay
         }
     }
 
-    public class InvertBooleanConverter : IValueConverter
+    public class InvertedBooleanToVisibilityConverter : IValueConverter
     {
-        public object Convert(object value, System.Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             if (value is bool boolValue)
             {
-                return !boolValue;
+                return boolValue ? Visibility.Collapsed : Visibility.Visible;
             }
-            return value;
+            return Visibility.Collapsed;
         }
 
-        public object ConvertBack(object value, System.Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 

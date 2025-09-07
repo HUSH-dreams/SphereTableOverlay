@@ -11,6 +11,7 @@
         Topmost="True" 
         Icon="images/favicon.ico"
         ShowInTaskbar="False"
+ 
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         MouseEnter="Window_MouseEnter"
         MouseLeave="Window_MouseLeave"
@@ -20,7 +21,8 @@
         <WindowChrome ResizeBorderThickness="8" 
                     CaptionHeight="0"
                     CornerRadius="0"
-                    GlassFrameThickness="0"/>
+               
+     GlassFrameThickness="0"/>
     </WindowChrome.WindowChrome>
     <Window.Resources>
         <Style x:Key="BaseTextBoxStyle" TargetType="TextBox">
@@ -29,7 +31,8 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="5"/>
-        </Style>
+      
+   </Style>
 
         <Style x:Key="BaseComboBoxStyle" TargetType="ComboBox">
             <Setter Property="Foreground" Value="White"/>
@@ -38,61 +41,82 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
             <Setter Property="Template">
-                <Setter.Value>
+     
+            <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
                         <Grid x:Name="MainGrid">
                             <ToggleButton x:Name="ToggleButton"
-                                        Grid.Column="2"
+              
+                           Grid.Column="2"
                                         Focusable="false"
-                                        IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                  
+       IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
-                                        <Grid>
+                     
+                    <Grid>
                                             <Border x:Name="Border"
-                                                    Background="#7a8ebf"
+                                    
+                 Background="#7a8ebf"
                                                     BorderBrush="#7a8ebf"
-                                                    BorderThickness="1" />
+                                
+                     BorderThickness="1" />
                                             <Path HorizontalAlignment="Right"
-                                                Margin="0,0,8,0"
+                                  
+               Margin="0,0,8,0"
                                                 Fill="White"
-                                                Data="M 0 0 L 4 4 L 8 0 Z"
+                                      
+           Data="M 0 0 L 4 4 L 8 0 Z"
                                                 VerticalAlignment="Center"/>
-                                        </Grid>
+                                 
+         </Grid>
                                     </ControlTemplate>
                                 </ToggleButton.Template>
-                            </ToggleButton>
+                         
+     </ToggleButton>
 
                             <ContentPresenter HorizontalAlignment="Left"
                                             Margin="10,0,0,0"
-                                            IsHitTestVisible="False"
+                        
+                     IsHitTestVisible="False"
                                             VerticalAlignment="Center"
-                                            Content="{TemplateBinding SelectionBoxItem}"
+                                    
+         Content="{TemplateBinding SelectionBoxItem}"
                                             ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                             ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
 
-                            <Popup x:Name="Popup"
+ 
+                             <Popup x:Name="Popup"
                                 Placement="Bottom"
                                 IsOpen="{Binding IsChecked, ElementName=ToggleButton}"
-                                AllowsTransparency="True"
+      
+                           AllowsTransparency="True"
                                 Focusable="False"
                                 PopupAnimation="Slide">
-                                
+          
+                       
                                 <Grid Name="DropDown"
                                     SnapsToDevicePixels="True"
-                                    MinWidth="{TemplateBinding ActualWidth}"
+         
+                             MinWidth="{TemplateBinding ActualWidth}"
                                     MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                                    
+                                   
+  
                                     <Border x:Name="DropDownBorder"
                                             Background="#061B3D"
-                                            BorderThickness="1"
+                  
+                           BorderThickness="1"
                                             BorderBrush="#061B3D"/>
-                                    
+                              
+       
                                     <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
                                         <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
-                                    </ScrollViewer>
+              
+                       </ScrollViewer>
                                 </Grid>
                             </Popup>
-                        </Grid>
+                  
+        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -101,13 +125,15 @@
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="#061B3D"/>
+ 
             <Setter Property="Padding" Value="5"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="#061B3D" />
                 </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
+    
+             <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#061B3D" />
                 </Trigger>
             </Style.Triggers>
@@ -115,7 +141,8 @@
 
         <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Margin" Value="0,5,0,5"/>
+   
+          <Setter Property="Margin" Value="0,5,0,5"/>
             <Setter Property="FontSize" Value="15" />
             <Setter Property="FontWeight" Value="Bold" />
         </Style>
@@ -124,7 +151,8 @@
         <Style TargetType="TextBox" BasedOn="{StaticResource BaseTextBoxStyle}" />
         <Style TargetType="ComboBox" BasedOn="{StaticResource BaseComboBoxStyle}" />
 
-        <Style TargetType="PasswordBox">
+       
+  <Style TargetType="PasswordBox">
             <Setter Property="Background" Value="#1f1f1f"/>
             <Setter Property="BorderBrush" Value="#444"/>
             <Setter Property="Foreground" Value="White"/>
@@ -133,7 +161,8 @@
         </Style>
 
         <Style x:Key="EditRowWrapper" TargetType="StackPanel">
-            <Setter Property="Orientation" Value="Horizontal"/>
+          
+   <Setter Property="Orientation" Value="Horizontal"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="Margin" Value="0,10,0,0"/>
             <Setter Property="MaxWidth" Value="400" />
@@ -142,7 +171,8 @@
         <Style x:Key="LoginButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#4CAF50"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
+       
+     <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="10"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="14"/>
@@ -151,7 +181,8 @@
 
         <Style x:Key="CancelButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#e8776f"/>
-            <Setter Property="Foreground" Value="White"/>
+     
+         <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="10"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -160,7 +191,8 @@
         </Style>
 
         <Style TargetType="Button">
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+    
+         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
@@ -169,7 +201,8 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Padding" Value="0,5"/>
-        </Style>
+   
+     </Style>
 
         <Style TargetType="DataGrid">
             <Setter Property="Padding" Value="0"/>
@@ -179,7 +212,8 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
-        <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="Transparent"/>
+        
+ <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="Transparent"/>
         <SolidColorBrush x:Key="ScrollBarThumbNormalBrush" Color="#5a5a5a"/>
         <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#888888"/>
         <SolidColorBrush x:Key="ScrollBarThumbPressedBrush" Color="#a0a0a0"/>
@@ -189,21 +223,26 @@
             <Setter Property="OverridesDefaultStyle" Value="true"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="IsTabStop" Value="false"/>
-            <Setter Property="Template">
+     
+         <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
                         <Border x:Name="border"
-                                Background="{StaticResource ScrollBarThumbNormalBrush}"
+                             
+     Background="{StaticResource ScrollBarThumbNormalBrush}"
                                 CornerRadius="4"
                                 SnapsToDevicePixels="True"/>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="true">
+        
+                     <Trigger Property="IsMouseOver" Value="true">
                                 <Setter TargetName="border" Property="Background" Value="{StaticResource ScrollBarThumbHoverBrush}"/>
                             </Trigger>
-                            <Trigger Property="IsDragging" Value="true">
+              
+               <Trigger Property="IsDragging" Value="true">
                                 <Setter TargetName="border" Property="Background" Value="{StaticResource ScrollBarThumbPressedBrush}"/>
                             </Trigger>
-                        </ControlTemplate.Triggers>
+                    
+     </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -212,12 +251,14 @@
         <Style x:Key="ScrollBarPageButton" TargetType="{x:Type RepeatButton}">
             <Setter Property="OverridesDefaultStyle" Value="true"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="IsTabStop" Value="false"/>
+ 
+             <Setter Property="IsTabStop" Value="false"/>
             <Setter Property="Focusable" Value="false"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type RepeatButton}">
-                        <Border Background="Transparent"/>
+                      
+   <Border Background="Transparent"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -226,33 +267,39 @@
         <ControlTemplate x:Key="VerticalScrollBarTemplate" TargetType="{x:Type ScrollBar}">
             <Grid>
                 <Grid.RowDefinitions>
+  
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Border Grid.RowSpan="3"
-                        Background="{StaticResource ScrollBarTrackBrush}"
+      
+                    Background="{StaticResource ScrollBarTrackBrush}"
                         CornerRadius="4"/>
                 <Track x:Name="PART_Track" Grid.Row="1" IsDirectionReversed="true">
                     <Track.DecreaseRepeatButton>
-                        <RepeatButton Style="{StaticResource ScrollBarPageButton}"/>
+                  
+        <RepeatButton Style="{StaticResource ScrollBarPageButton}"/>
                     </Track.DecreaseRepeatButton>
                     <Track.Thumb>
                         <Thumb Style="{StaticResource ScrollBarThumbStyle}" Margin="1"/>
                     </Track.Thumb>
-                    <Track.IncreaseRepeatButton>
+     
+                 <Track.IncreaseRepeatButton>
                         <RepeatButton Style="{StaticResource ScrollBarPageButton}"/>
                     </Track.IncreaseRepeatButton>
                 </Track>
             </Grid>
         </ControlTemplate>
 
-        <Style x:Key="{x:Type ScrollBar}" TargetType="{x:Type ScrollBar}">
+   
+      <Style x:Key="{x:Type ScrollBar}" TargetType="{x:Type ScrollBar}">
             <Setter Property="OverridesDefaultStyle" Value="true"/>
             <Style.Triggers>
                 <Trigger Property="Orientation" Value="Vertical">
                     <Setter Property="Width" Value="3"/>
                     <Setter Property="Template" Value="{StaticResource VerticalScrollBarTemplate}"/>
+  
                 </Trigger>
                 <Trigger Property="Orientation" Value="Horizontal">
                     <Setter Property="Height" Value="3"/>
@@ -261,7 +308,8 @@
         </Style>
 
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <local:InvertBooleanConverter x:Key="InvertBooleanConverter" />
+ 
+        <local:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter" />
         <local:WhiteTimeColorConverter x:Key="WhiteTimeColorConverter"/>
         <Style x:Key="TitleStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White"/>
@@ -269,10 +317,37 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
+
+        
+ <Storyboard x:Key="LoadingAnimation" RepeatBehavior="Forever">
+        <ColorAnimation Storyboard.TargetName="Dot1" 
+                        Storyboard.TargetProperty="Fill.(SolidColorBrush.Color)"
+                        To="#A9B8D5" From="#415B91"
+                        Duration="0:0:1.5"
+               
+          AutoReverse="True"/>
+        
+        <ColorAnimation Storyboard.TargetName="Dot2" 
+                        Storyboard.TargetProperty="Fill.(SolidColorBrush.Color)"
+                        To="#7589B3" From="#415B91"
+                        
+ BeginTime="0:0:0.25"
+                        Duration="0:0:1.5"
+                        AutoReverse="True"/>
+        
+        <ColorAnimation Storyboard.TargetName="Dot3" 
+                        Storyboard.TargetProperty="Fill.(SolidColorBrush.Color)"
+          
+                To="#415B91" From="#415B91"
+                        BeginTime="0:0:0.5"
+                        Duration="0:0:1.5"
+                        AutoReverse="True"/>
+    </Storyboard>
     </Window.Resources>
 
     <Window.Background>
-        <SolidColorBrush Opacity="1" Color="#061b3d "/>
+ 
+         <SolidColorBrush Opacity="1" Color="#061b3d "/>
     </Window.Background>
 
     <Grid>
@@ -290,123 +365,153 @@
             </Grid.ColumnDefinitions>
             
             <StackPanel x:Name="TimeButtonsPanel"
-                        Grid.Column="0"
+            
+              Grid.Column="0"
                         Orientation="Horizontal"
                         HorizontalAlignment="Left"
                         Visibility="{Binding ElementName=TablesScrollViewer, Path=Visibility}">
-                
+              
+   
                 <Button Content="15" Margin="3,0" Tag="15" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White"/>
                 <Button Content="30" Margin="3,0" Tag="30" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
                 <Button Content="45" Margin="3,0" Tag="45" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
-                <Button Content="60" Margin="3,0" Tag="60" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
+                <Button Content="60" 
+ Margin="3,0" Tag="60" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
                 <Button Content="75" Margin="3,0" Tag="75" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
                 <Button Content="90" Margin="3,0" Tag="90" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
                 <Button Content="120" Margin="3,0" Tag="120" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
-                <Button Content="250" Margin="3,0" Tag="250" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
+          
+        <Button Content="250" Margin="3,0" Tag="250" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
                 <Button Content="350" Margin="3,0" Tag="350" Click="TimeButton_Click" FontSize="13" FontWeight="Bold" Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Foreground="White" />
             </StackPanel>
 
             <Button x:Name="LogoutButton"
                         Grid.Column="1"
-                        Width="30" 
+       
+                  Width="30" 
                         Height="30" 
                         Background="Transparent" 
                         BorderThickness="0"
-                        BorderBrush="Transparent"
+        
+                  BorderBrush="Transparent"
                         Foreground="White" 
                         FontSize="16"
                         FontWeight="Normal" 
-                        Click="LogoutButton_Click" 
+          
+                Click="LogoutButton_Click" 
                         Margin="0"
                         Visibility="{Binding ElementName=TablesPanel, Path=Visibility}">
-                        <Path Data="M14,7.63636L14,4.5C14,4.22386 13.7761,4 13.5,4L4.5,4C4.22386,4 4,4.22386 4,4.5L4,19.5C4,19.7761 4.22386,20 4.5,20L13.5,20C13.7761,20 14,19.7761 14,19.5L14,16.3636 M10,12L21,12 M21,12L18.0004,8.5 M21,12L18,15.5"
+                        <Path Data="M14,7.63636L14,4.5C14,4.22386 13.7761,4 13.5,4L4.5,4C4.22386,4 4,4.22386 4,4.5L4,19.5C4,19.7761 4.22386,20 4.5,20L13.5,20C13.7761,20 14,19.7761 14,19.5L14,16.3636 M10,12L21,12 
+ M21,12L18.0004,8.5 M21,12L18,15.5"
                           Stretch="Uniform"
                           Stroke="White"
                           StrokeThickness="2"
-                          Width="15"
+                     
+      Width="15"
                           Height="15"
                           VerticalAlignment="Center"
                           HorizontalAlignment="Center" />
             </Button>
 
-            <Button x:Name="BackButton"
+    
+          <Button x:Name="BackButton"
                         Grid.Column="2"
                         Width="30" 
                         Height="30" 
-                        Background="Transparent" 
+                 
+         Background="Transparent" 
                         BorderThickness="0"
                         BorderBrush="Transparent"
                         FontSize="16"
-                        Foreground="White" 
+                    
+      Foreground="White" 
                         FontWeight="Bold" 
                         Click="BackButton_Click" 
                         Margin="20,0,0,0"
-                        Visibility="{Binding ElementName=TablesScrollViewer, Path=Visibility}">
+                     
+     Visibility="{Binding ElementName=TablesScrollViewer, Path=Visibility}">
                 <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
                       Stretch="Uniform"
                       Stroke="White"
                       StrokeThickness="2"
-                      Width="15"
+       
+                 Width="15"
                       Height="15"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Center" />
             </Button>
 
-            <Button x:Name="BackFromEditButton"
+      
+        <Button x:Name="BackFromEditButton"
                         Grid.Column="2"
                         Width="30" 
                         Height="30" 
-                        Background="Transparent" 
+                   
+      Background="Transparent" 
                         BorderThickness="0"
                         BorderBrush="Transparent"
                         FontSize="16"
-                        Foreground="White" 
+                      
+    Foreground="White" 
                         FontWeight="Bold" 
                         Click="BackFromEditButton_Click" 
                         Margin="20,0,0,0"
-                        Visibility="{Binding ElementName=EditCastleScroll, Path=Visibility}">
+                       
+  Visibility="{Binding ElementName=EditCastleScroll, Path=Visibility}">
                 <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
                       Stretch="Uniform"
                       Stroke="White"
                       StrokeThickness="2"
-                      Width="15"
+         
+               Width="15"
                       Height="15"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Center" />
             </Button>
 
-            <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+        
+      <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
                 <Button x:Name="ToggleBackgroundButton"
                         Width="30" 
                         Height="30"
                         Background="Transparent"
+  
                         BorderThickness="0"
                         BorderBrush="Transparent"
                         Foreground="White"
                         FontSize="16"
-                        Click="ToggleBackgroundButton_Click"
+      
+                    Click="ToggleBackgroundButton_Click"
                         Margin="0" 
                         FocusVisualStyle="{x:Null}"
                         >
-                    <Path Data="M11 1C11 0.447715 11.4477 0 12 0C12.5523 0 13 0.447715 13 1V3C13 3.55228 12.5523 4 12 4C11.4477 4 11 3.55228 11 3V1Z M18 12C18 15.3137 15.3137 18 12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12ZM8.06167 12C8.06167 14.1751 9.82492 15.9383 12 15.9383C14.1751 15.9383 15.9383 14.1751 15.9383 12C15.9383 9.82492 14.1751 8.06167 12 8.06167C9.82492 8.06167 8.06167 9.82492 8.06167 12Z M20.4853 3.51472C20.0947 3.12419 19.4616 3.12419 19.0711 3.51472L17.6568 4.92893C17.2663 5.31946 17.2663 5.95262 17.6568 6.34315C18.0474 6.73367 18.6805 6.73367 19.0711 6.34315L20.4853 4.92893C20.8758 4.53841 20.8758 3.90524 20.4853 3.51472Z M1 13C0.447715 13 0 12.5523 0 12C0 11.4477 0.447715 11 1 11H3C3.55228 11 4 11.4477 4 12C4 12.5523 3.55228 13 3 13H1Z M3.51472 3.51472C3.1242 3.90524 3.1242 4.53841 3.51472 4.92893L4.92894 6.34315C5.31946 6.73367 5.95263 6.73367 6.34315 6.34315C6.73368 5.95262 6.73368 5.31946 6.34315 4.92893L4.92894 3.51472C4.53841 3.12419 3.90525 3.12419 3.51472 3.51472Z M11 21C11 20.4477 11.4477 20 12 20C12.5523 20 13 20.4477 13 21V23C13 23.5523 12.5523 24 12 24C11.4477 24 11 23.5523 11 23V21Z M6.34315 17.6569C5.95263 17.2663 5.31946 17.2663 4.92894 17.6569L3.51473 19.0711C3.1242 19.4616 3.1242 20.0948 3.51473 20.4853C3.90525 20.8758 4.53842 20.8758 4.92894 20.4853L6.34315 19.0711C6.73368 18.6805 6.73368 18.0474 6.34315 17.6569Z M21 13C20.4477 13 20 12.5523 20 12C20 11.4477 20.4477 11 21 11H23C23.5523 11 24 11.4477 24 12C24 12.5523 23.5523 13 23 13H21Z M17.6568 17.6569C17.2663 18.0474 17.2663 18.6805 17.6568 19.0711L19.0711 20.4853C19.4616 20.8758 20.0947 20.8758 20.4853 20.4853C20.8758 20.0948 20.8758 19.4616 20.4853 19.0711L19.0711 17.6569C18.6805 17.2663 18.0474 17.2663 17.6568 17.6569Z"
+         
+             <Path Data="M11 1C11 0.447715 11.4477 0 12 0C12.5523 0 13 0.447715 13 1V3C13 3.55228 12.5523 4 12 4C11.4477 4 11 3.55228 11 3V1Z M18 12C18 15.3137 15.3137 18 12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12ZM8.06167 12C8.06167 14.1751 9.82492 15.9383 12 15.9383C14.1751 15.9383 15.9383 14.1751 15.9383 12C15.9383 9.82492 14.1751 8.06167 12 8.06167C9.82492 8.06167 8.06167 9.82492 8.06167 12Z M20.4853 3.51472C20.0947 3.12419 19.4616 3.12419 19.0711 3.51472L17.6568 4.92893C17.2663 5.31946 17.2663 5.95262 17.6568 6.34315C18.0474 6.73367 18.6805 6.73367 19.0711 6.34315L20.4853 4.92893C20.8758 4.53841 20.8758 3.90524 20.4853 
+ 3.51472Z M1 13C0.447715 13 0 12.5523 0 12C0 11.4477 0.447715 11 1 11H3C3.55228 11 4 11.4477 4 12C4 12.5523 3.55228 13 3 13H1Z M3.51472 3.51472C3.1242 3.90524 3.1242 4.53841 3.51472 4.92893L4.92894 6.34315C5.31946 6.73367 5.95263 6.73367 6.34315 6.34315C6.73368 5.95262 6.73368 5.31946 6.34315 4.92893L4.92894 3.51472C4.53841 3.12419 3.90525 3.12419 3.51472 3.51472Z M11 21C11 20.4477 11.4477 20 12 20C12.5523 20 13 20.4477 13 21V23C13 23.5523 12.5523 24 12 24C11.4477 24 11 23.5523 11 23V21Z M6.34315 17.6569C5.95263 17.2663 5.31946 17.2663 4.92894 17.6569L3.51473 19.0711C3.1242 19.4616 3.1242 20.0948 3.51473 20.4853C3.90525 20.8758 4.53842 20.8758 4.92894 20.4853L6.34315 19.0711C6.73368 18.6805 6.73368 18.0474 6.34315 17.6569Z M21 13C20.4477 13 20 12.5523 20 12C20 
+ 11.4477 20.4477 11 21 11H23C23.5523 11 24 11.4477 24 12C24 12.5523 23.5523 13 23 13H21Z M17.6568 17.6569C17.2663 18.0474 17.2663 18.6805 17.6568 19.0711L19.0711 20.4853C19.4616 20.8758 20.0947 20.8758 20.4853 20.4853C20.8758 20.0948 20.8758 19.4616 20.4853 19.0711L19.0711 17.6569C18.6805 17.2663 18.0474 17.2663 17.6568 17.6569Z"
                           Stretch="Uniform"
                           Fill="White"
-                          Width="18"
+          
+                  Width="18"
                           Height="18"
                           VerticalAlignment="Center"
                           HorizontalAlignment="Center" />
-                </Button>
+     
+             </Button>
                 <Button x:Name="CloseButton" 
                         Width="30" 
                         FontSize="16"
-                        Height="30" 
+                      
+    Height="30" 
                         Background="Transparent" 
                         BorderThickness="0"
                         BorderBrush="Transparent"
-                        Foreground="White" 
+                        
+ Foreground="White" 
                         Click="CloseButton_Click" 
                         Margin="0">
-                    <Path Data="M20.7457 3.32851C20.3552 2.93798 19.722 2.93798 19.3315 3.32851L12.0371 10.6229L4.74275 3.32851C4.35223 2.93798 3.71906 2.93798 3.32854 3.32851C2.93801 3.71903 2.93801 4.3522 3.32854 4.74272L10.6229 12.0371L3.32856 19.3314C2.93803 19.722 2.93803 20.3551 3.32856 20.7457C3.71908 21.1362 4.35225 21.1362 4.74277 20.7457L12.0371 13.4513L19.3315 20.7457C19.722 21.1362 20.3552 21.1362 20.7457 20.7457C21.1362 20.3551 21.1362 19.722 20.7457 19.3315L13.4513 12.0371L20.7457 4.74272C21.1362 4.3522 21.1362 3.71903 20.7457 3.32851Z"
+                    <Path Data="M20.7457 3.32851C20.3552 2.93798 19.722 2.93798 19.3315 3.32851L12.0371 10.6229L4.74275 3.32851C4.35223 2.93798 3.71906 2.93798 3.32854 3.32851C2.93801 3.71903 2.93801 4.3522 3.32854 4.74272L10.6229 12.0371L3.32856 19.3314C2.93803 19.722 2.93803 20.3551 3.32856 20.7457C3.71908 21.1362 4.35225 21.1362 
+ 4.74277 20.7457L12.0371 13.4513L19.3315 20.7457C19.722 21.1362 20.3552 21.1362 20.7457 20.7457C21.1362 20.3551 21.1362 19.722 20.7457 19.3315L13.4513 12.0371L20.7457 4.74272C21.1362 4.3522 21.1362 3.71903 20.7457 3.32851Z"
                           Stretch="Uniform"
                           Fill="White"
                           Width="14"
@@ -414,10 +519,18 @@
                           VerticalAlignment="Center"
                           HorizontalAlignment="Center" />
                 </Button>
-            </StackPanel>
+       
+      </StackPanel>
         </Grid>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,10,0"
+            Visibility="{Binding IsSavedLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Ellipse x:Name="Dot1" Width="10" Height="10" Fill="#A9B8D5" Margin="2"/>
+            <Ellipse x:Name="Dot2" Width="10" Height="10" Fill="#7589B3" Margin="2"/>
+            <Ellipse x:Name="Dot3" Width="10" Height="10" Fill="#415B91" Margin="2"/>
+        </StackPanel>
         
-        <StackPanel x:Name="LoginPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent" Height="300" Width="300" Margin="0,30,0,0">
+        <StackPanel x:Name="LoginPanel" Visibility="{Binding IsSavedLoading, Converter={StaticResource InvertedBooleanToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent" Height="300" Width="300" Margin="0,30,0,0">
             <StackPanel x:Name="EmailLoginPanel" Visibility="Visible">
                 <Label Content="Email:" FontSize="14" HorizontalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="0,10,0,0"/>
                 <TextBox x:Name="EmailTextBox" FontSize="14" Width="200" Margin="0,2,0,10" Foreground="White" Background="#7a8ebf"/>
@@ -425,13 +538,13 @@
                 <PasswordBox x:Name="PasswordBox" FontSize="14" Width="200" Margin="0,2,0,10" Foreground="White" Background="#7a8ebf"/>
                 <Button x:Name="LoginButton" FontSize="14" Content="Войти" Click="LoginButton_Click" Width="100" Margin="0,5,0,5" FontWeight="Bold" Background="#1f70f2" Foreground="White" BorderThickness="0" Padding="20,5"/>
                 <Button Content="Вход по токену" FontSize="14" Click="SwitchToTokenLogin" Width="150" Margin="0,5,0,5" FontWeight="Bold" Foreground="White" Background="Transparent" BorderThickness="0"/>
-            </StackPanel>
+          </StackPanel>
 
             <StackPanel x:Name="TokenLoginPanel" Visibility="Collapsed">
                 <Label Content="Вставьте ваш токен:" FontSize="14" HorizontalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="0,10,0,0"/>
                 <TextBox x:Name="TokenTextBox" FontSize="14" Foreground="White" Background="#7a8ebf" Width="200" Margin="0,2,0,10"/>
                 <Button Content="Войти" FontSize="14" Click="TokenLoginButton_Click" Width="100" Margin="0,5,0,5" FontWeight="Bold" Background="#1f70f2" Foreground="White" BorderThickness="0" Padding="20,5"/>
-                <Button Content="Вход по паролю" FontSize="14" Click="SwitchToEmailLogin" Width="150" Margin="0,5,0,5" FontWeight="Bold" Foreground="White" Background="Transparent" BorderThickness="0"/>
+             <Button Content="Вход по паролю" FontSize="14" Click="SwitchToEmailLogin" Width="150" Margin="0,5,0,5" FontWeight="Bold" Foreground="White" Background="Transparent" BorderThickness="0"/>
             </StackPanel>
 
             <TextBlock x:Name="StatusTextBlock" Margin="0,10,0,0" TextAlignment="Center" 
@@ -444,183 +557,217 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <DataGrid x:Name="TablesDataGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
-                        Background="Transparent" 
-                        Foreground="White" 
-                        RowBackground="Transparent" 
-                        FontSize="16"
-                        AlternatingRowBackground="Transparent"
-                        HeadersVisibility="Column" 
-                        GridLinesVisibility="Horizontal" 
-                        HorizontalGridLinesBrush="#80555555" 
-                        VerticalGridLinesBrush="#80555555"
-                        CanUserSortColumns="False"
-                        PreviewMouseWheel="DataGrid_PreviewMouseWheel"
-                        PreviewMouseLeftButtonUp="TablesDataGrid_PreviewMouseLeftButtonDown">
-                
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Выберите таблицу" Binding="{Binding name}" Width="*"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Grid>
+                <DataGrid x:Name="TablesDataGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" Background="Transparent" Foreground="White" RowBackground="Transparent" FontSize="16" AlternatingRowBackground="Transparent"
+                    HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#80555555" VerticalGridLinesBrush="#80555555" CanUserSortColumns="False" PreviewMouseWheel="DataGrid_PreviewMouseWheel" 
+                    PreviewMouseLeftButtonUp="TablesDataGrid_PreviewMouseLeftButtonDown">
+            <DataGrid.Columns>
+                        <DataGridTextColumn Header="Выберите таблицу" Binding="{Binding name}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
 
         <Grid x:Name="MainContent" Grid.Row="1" Margin="8,0,8,8">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
+         
+         <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             
             <ScrollViewer Grid.Row="1" Visibility="Collapsed" x:Name="TablesScrollViewer" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
                 <DataGrid x:Name="CastlesDataGrid" AutoGenerateColumns="False" IsReadOnly="True" RowHeight="30"
-                            Background="Transparent" FontSize="16" Foreground="White" RowBackground="Transparent" AlternatingRowBackground="#80444444" 
+              
+                Background="Transparent" FontSize="16" Foreground="White" RowBackground="Transparent" AlternatingRowBackground="#80444444" 
                             CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False"
                             HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#80555555" VerticalGridLinesBrush="#80555555"
-                            CanUserSortColumns="False"
+                    
+          CanUserSortColumns="False"
                             MouseLeftButtonUp="CastlesDataGrid_MouseLeftButtonUp">
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
-                            <Style.Triggers>
+                   
+           <Style.Triggers>
                                 <DataTrigger Binding="{Binding WhiteTime}" Value="-">
                                     <Setter Property="Foreground" Value="LightSlateGray" />
-                                </DataTrigger>
+                 
+                 </DataTrigger>
                                 <DataTrigger Binding="{Binding WhiteTime}" Value="N/A">
                                     <Setter Property="Foreground" Value="LightSlateGray" />
-                                </DataTrigger>
+           
+                       </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
-                    <DataGrid.Columns>
+       
+               <DataGrid.Columns>
                         <DataGridTemplateColumn Header="" Width="30">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border Background="{Binding StatusColor}" 
+ 
+                                     <Border Background="{Binding StatusColor}" 
                                             Width="20" Height="20" 
-                                            CornerRadius="3"
+                
+                              CornerRadius="3"
                                             HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"/>
+                           
+                   VerticalAlignment="Center"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                       
+   </DataGridTemplateColumn>
                         <DataGridTextColumn Header="Замок" Binding="{Binding nameRu}" Width="*">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="VerticalAlignment" Value="Center" />
+          
+                            <Setter Property="VerticalAlignment" Value="Center" />
                                     <Setter Property="FontWeight" Value="Bold" />
-                                    <Style.Triggers>
+                                
+      <Style.Triggers>
                                         <DataTrigger Binding="{Binding WhiteTime}" Value="-">
                                             <Setter Property="FontWeight" Value="Normal" />
-                                        </DataTrigger>
+      
+                                    </DataTrigger>
                                         <DataTrigger Binding="{Binding WhiteTime}" Value="N/A">
-                                            <Setter Property="FontWeight" Value="Normal" />
+                       
+                       <Setter Property="FontWeight" Value="Normal" />
                                         </DataTrigger>
-                                    </Style.Triggers>
+                                    
+  </Style.Triggers>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTemplateColumn Header="Через" Width="70">
+                
+          <DataGridTemplateColumn Header="Через" Width="70">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding WhiteTime}" FontWeight="Bold"
+                              
+        <TextBlock Text="{Binding WhiteTime}" FontWeight="Bold"
                                                 VerticalAlignment="Center" HorizontalAlignment="Left">
                                         <TextBlock.Style>
+  
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="FontWeight" Value="Bold" />
-                                                <Style.Triggers>
+      
+                                            <Style.Triggers>
                                                     <DataTrigger Binding="{Binding WhiteTime}" Value="-">
-                                                        <Setter Property="FontWeight" Value="Normal" />
-                                                    </DataTrigger>
+   
+                                                       <Setter Property="FontWeight" Value="Normal" />
+                                            
+          </DataTrigger>
                                                     <DataTrigger Binding="{Binding WhiteTime}" Value="N/A">
-                                                        <Setter Property="FontWeight" Value="Normal" />
+                                     
+                     <Setter Property="FontWeight" Value="Normal" />
                                                     </DataTrigger>
-                                                </Style.Triggers>
+                          
+                        </Style.Triggers>
                                             </Style>
-                                        </TextBlock.Style>
+                                  
+        </TextBlock.Style>
                                     </TextBlock>
                                 </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
+                          
+    </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="СВ" Binding="{Binding fillingSpheretime}" Width="50"/>
                     </DataGrid.Columns>
                 </DataGrid>
-            </ScrollViewer>
+          
+    </ScrollViewer>
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" x:Name="EditCastleScroll" Visibility="Collapsed">
                 <StackPanel x:Name="EditCastleForm"
                             VerticalAlignment="Top">
                     
-                    <StackPanel.Resources>
+                 
+     <StackPanel.Resources>
                         <Style TargetType="TextBox" BasedOn="{StaticResource BaseTextBoxStyle}">
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
                             <Setter Property="MaxWidth" Value="400" />
-                        </Style>
+        
+                  </Style>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
-                            <Setter Property="MaxWidth" Value="400" />
+                          
+    <Setter Property="MaxWidth" Value="400" />
                         </Style>
                         <Style TargetType="ComboBox" BasedOn="{StaticResource BaseComboBoxStyle}">
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
-                            <Setter Property="MaxWidth" Value="400" />
+             
+                 <Setter Property="MaxWidth" Value="400" />
                         </Style>
                     </StackPanel.Resources>
 
                     <TextBlock x:Name="CastleNameTextBlock" Margin="0,0,0,0" HorizontalAlignment="Center" FontSize="18"/>
-                    
+              
+       
                     <StackPanel Margin="8" MaxWidth="400">
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="70" />
+                   
+               <ColumnDefinition Width="70" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Время*" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                       
+      <TextBlock Text="Время*" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <TextBox Name="FillingTimeTextBox" Grid.Column="1" GotFocus="TextBox_GotFocus" LostFocus="FillingTimeTextBox_LostFocus" />
                         </Grid>
 
                         <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
+         
+                     <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70" />
                                 <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
+             
+                 </Grid.ColumnDefinitions>
                             <TextBlock Text="Дата*" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <ComboBox Name="FillingDateComboBox" Grid.Column="1" VerticalAlignment="Center" />
-                        </Grid>
+                     
+     </Grid>
 
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70" />
-                                <ColumnDefinition Width="*" />
+          
+                        <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Лива*" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <ComboBox x:Name="FillingLvlComboBox" Grid.Column="1" VerticalAlignment="Center" />
+                
+              <ComboBox x:Name="FillingLvlComboBox" Grid.Column="1" VerticalAlignment="Center" />
                         </Grid>
 
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="70" />
+       
+                          <ColumnDefinition Width="70" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="СВ" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+           
+                   <TextBlock Text="СВ" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <TextBox x:Name="FillingSpheretimeTextBox" Grid.Column="1" GotFocus="TextBox_GotFocus" LostFocus="FillingSpheretimeTextBox_LostFocus" VerticalAlignment="Center"/>
                         </Grid>
 
-                        <Grid Margin="0,5">
+                      
+    <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70" />
                                 <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
+ 
+                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Клан*" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <ComboBox x:Name="ClanComboBox" Grid.Column="1" VerticalAlignment="Center"/>
-                        </Grid>
-
+          
+                </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Коммент" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <TextBox x:Name="CommentaryTextBox" Grid.Column="1" GotFocus="TextBox_GotFocus" VerticalAlignment="Center"/>
+     
+                         <TextBox x:Name="CommentaryTextBox" Grid.Column="1" GotFocus="TextBox_GotFocus" VerticalAlignment="Center"/>
                         </Grid>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="Отменить"
+       
+                   <Button Content="Отменить"
                                 Style="{StaticResource CancelButtonStyle}"
                                 Margin="0,5,5,0"
                                 Width="100"
@@ -638,6 +785,7 @@
                         Margin="0,10,0,0"
                         TextAlignment="Center"
                         Visibility="Collapsed"/>
+              
                 </StackPanel>
             </ScrollViewer>
         </Grid>
