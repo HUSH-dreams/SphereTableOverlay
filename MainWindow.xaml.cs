@@ -404,6 +404,20 @@ namespace DollOverlay
             }
         }
 
+        private string? _ownerClanName;
+        public string? OwnerClanName
+        {
+            get => _ownerClanName;
+            set
+            {
+                if (_ownerClanName != value)
+                {
+                    _ownerClanName = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
         private string? _fillingDatetime;
         [JsonPropertyName("fillingDatetime")]
         public string? fillingDatetime
@@ -419,6 +433,8 @@ namespace DollOverlay
                     NotifyPropertyChanged(nameof(WhiteTime));
                     NotifyPropertyChanged(nameof(StatusText));
                     NotifyPropertyChanged(nameof(StatusColor));
+                    NotifyPropertyChanged(nameof(RedTimeExact));
+                    NotifyPropertyChanged(nameof(RedTime));
                 }
             }
         }
@@ -537,6 +553,55 @@ namespace DollOverlay
             }
         }
 
+        public DateTime RedTimeExact
+        {
+            get
+            {
+                // Проверяем, есть ли все необходимые данные для расчета
+                if (string.IsNullOrEmpty(fillingDatetime) || !long.TryParse(fillingDatetime, out _))
+                {
+                    return DateTime.MinValue;
+                }
+
+                // Получаем время, когда замок станет белым
+                DateTime whiteTime = WhiteTimeExact;
+                if (whiteTime == DateTime.MinValue)
+                {
+                    return DateTime.MinValue;
+                }
+
+                // Получаем длительность "красной" фазы
+                TimeSpan redThreshold = CastleHelper.GetRedTimeThreshold(lvl);
+
+                // Вычисляем время начала "красной" фазы
+                return whiteTime.Subtract(redThreshold);
+            }
+        }
+
+        public string RedTime
+        {
+            get
+            {
+                DateTime redTime = RedTimeExact;
+                // Если время не удалось рассчитать, возвращаем N/A
+                if (redTime == DateTime.MinValue)
+                {
+                    return "N/A";
+                }
+
+                TimeSpan timeRemaining = redTime - DateTime.Now;
+
+                // Если "красная" фаза уже наступила или прошла
+                if (timeRemaining.TotalMinutes <= 0)
+                {
+                    return "-";
+                }
+
+                // Возвращаем оставшееся время в формате "Хч Yм"
+                return $"{(int)timeRemaining.TotalHours}ч {timeRemaining.Minutes}м";
+            }
+        }
+
         public void NotifyPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -594,6 +659,7 @@ namespace DollOverlay
         private const string TokenFileName = "token.json";
         private const string SettingsFileName = "settings.json";
         private const string ButtonSettingsFileName = "button_settings.json";
+        private const string ColumnOrderFileName = "column_order.json";
         private DispatcherTimer _topmostTimer = new DispatcherTimer();
         private bool isBackgroundOpaque = true;
         [DllImport("user32.dll")]
@@ -999,6 +1065,7 @@ namespace DollOverlay
         {
             LoadWindowPosition();
             InitializeComponent();
+            LoadColumnOrder();
             ApplyBackgroundState();
 
             DataContext = this;
@@ -1075,6 +1142,58 @@ namespace DollOverlay
             catch (Exception ex)
             {
                 // Игнорируем ошибки сохранения, так как это не критично для функционала
+            }
+        }
+
+        private void SaveColumnOrder()
+        {
+            try
+            {
+                // Создаем словарь для хранения порядка: "ИмяСвойства" -> Позиция
+                var columnOrder = new Dictionary<string, int>();
+
+                foreach (var column in CastlesDataGrid.Columns)
+                {
+                    // Используем SortMemberPath как уникальный ключ колонки
+                    if (!string.IsNullOrEmpty(column.SortMemberPath))
+                    {
+                        columnOrder[column.SortMemberPath] = column.DisplayIndex;
+                    }
+                }
+
+                var json = JsonSerializer.Serialize(columnOrder);
+                File.WriteAllText(ColumnOrderFileName, json);
+            }
+            catch (Exception ex)
+            {
+                // Игнорируем ошибки, т.к. это не критично для работы
+            }
+        }
+
+        private void LoadColumnOrder()
+        {
+            try
+            {
+                if (!File.Exists(ColumnOrderFileName)) return;
+
+                var json = File.ReadAllText(ColumnOrderFileName);
+                var columnOrder = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+
+                if (columnOrder == null) return;
+
+                foreach (var column in CastlesDataGrid.Columns)
+                {
+                    // Ищем в сохраненных настройках колонку с таким же ключом (SortMemberPath)
+                    if (!string.IsNullOrEmpty(column.SortMemberPath) && 
+                        columnOrder.TryGetValue(column.SortMemberPath, out int displayIndex))
+                    {
+                        column.DisplayIndex = displayIndex;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Если файл поврежден или что-то пошло не так, просто используем порядок по умолчанию
             }
         }
 
@@ -1422,6 +1541,7 @@ namespace DollOverlay
                             fillingLvl = dynamicInfo?.fillingLvl,
                             fillingSpheretime = dynamicInfo?.fillingSpheretime,
                             ownerClan = dynamicInfo?.ownerClan,
+                            OwnerClanName = _clans.FirstOrDefault(c => c.id == dynamicInfo?.ownerClan)?.name ?? dynamicInfo?.ownerClan,
                             commentary = dynamicInfo?.commentary,
                         };
                         combinedCastles.Add(castle);
@@ -1596,6 +1716,7 @@ namespace DollOverlay
                     existingCastleInOriginal.fillingSpheretime = castleData.fillingSpheretime;
                     existingCastleInOriginal.commentary = castleData.commentary;
                     existingCastleInOriginal.ownerClan = castleData.ownerClan;
+                    existingCastleInObservable.OwnerClanName = _clans.FirstOrDefault(c => c.id == castleData.ownerClan)?.name ?? castleData.ownerClan;
                     existingCastleInOriginal.fillingDatetime = castleData.fillingDatetime;
                 }
 
@@ -1789,6 +1910,7 @@ namespace DollOverlay
         {
             SaveWindowPosition();
             SaveButtonSettings(); // Сохраняем состояние кнопок
+            SaveColumnOrder();
 
             if (_webSocket.State == WebSocketState.Open)
             {
