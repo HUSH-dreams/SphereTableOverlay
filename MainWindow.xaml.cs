@@ -781,7 +781,7 @@ namespace DollOverlay
             if (sender is TextBox textBox)
             {
                 // Стираем содержимое
-                textBox.Text = string.Empty;
+                textBox.SelectAll();
             }
         }
 
@@ -797,7 +797,8 @@ namespace DollOverlay
                 if (castle != null)
                 {
                     _selectedCastle = castle;
-
+                    string currentTime = DateTime.Now.ToString("HH:mm");
+                    FillingTimeTextBox.Text = currentTime;
                     // Заполняем элементы управления на форме
                     CastleNameTextBlock.Text = castle.nameRu;
                     FillingLvlComboBox.ItemsSource = new List<string> { "7", "6", "5", "4", "3", "2", "1" };
@@ -829,7 +830,9 @@ namespace DollOverlay
 
                     TablesScrollViewer.Visibility = Visibility.Collapsed;
                     EditCastleScroll.Visibility = Visibility.Visible;
-                    FillingTimeTextBox.Focus();
+                    Dispatcher.BeginInvoke(new Action(() => {
+                        FillingTimeTextBox.Focus();
+                    }), DispatcherPriority.Input);
                 }
             }
         }
@@ -935,6 +938,7 @@ namespace DollOverlay
                 ClearFormFields();
                 EditCastleScroll.Visibility = Visibility.Collapsed;
                 TablesScrollViewer.Visibility = Visibility.Visible;
+                CastlesDataGrid.SelectedItem = null;
             }
             catch (Exception ex)
             {
@@ -947,6 +951,7 @@ namespace DollOverlay
             // Просто скрываем форму редактирования и показываем основное окно
             EditCastleScroll.Visibility = Visibility.Collapsed;
             TablesScrollViewer.Visibility = Visibility.Visible;
+            CastlesDataGrid.SelectedItem = null;
         }
 
         private async Task UpdateCastleOnServer(CastleUpdateRequest request)
@@ -1379,8 +1384,6 @@ namespace DollOverlay
                         // Просто показываем экран выбора таблиц
                         SwitchToTablesSelection();
                     }
-
-                    _refreshTimer.Start();
                 }
                 else
                 {
@@ -1552,8 +1555,10 @@ namespace DollOverlay
                     LoadButtonSettings();
                     UpdateButtonAppearance();
                     ApplyFilterAndSort();
-
+                    _refreshTimer.Start();
+                    
                     await ConnectAndJoinTableAsync(selectedTable.id);
+                    
                 }
             }
             catch (Exception ex)
@@ -1599,6 +1604,7 @@ namespace DollOverlay
         private async void BackFromEditButton_Click(object sender, RoutedEventArgs e)
         {
             _selectedCastle = null;
+            _refreshTimer.Stop();
             ClearFormFields();
             SwitchToMainContent();
         }
