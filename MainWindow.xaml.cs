@@ -645,6 +645,7 @@ namespace DollOverlay
 
         private readonly ObservableCollection<Castle> _castlesObservable = new ObservableCollection<Castle>();
         private List<int> hiddenLevels = new List<int>();
+        private readonly List<int> AllLevels = new List<int> { 15, 30, 45, 60, 75, 90, 120, 250, 350 }; 
 
         private readonly DispatcherTimer _refreshTimer = new DispatcherTimer();
 
@@ -671,6 +672,8 @@ namespace DollOverlay
         private Storyboard? _loadingStoryboard;
         private bool _isLoading;
         private bool _isSavedLoading;
+        private double _expandedHeight; // Для хранения высоты до сворачивания
+        private bool _isContentCollapsed;
         public bool IsLoading
         {
             get => _isLoading;
@@ -681,6 +684,20 @@ namespace DollOverlay
                     _isLoading = value;
                     NotifyPropertyChanged(nameof(IsLoading));
                     UpdateLoadingAnimation();
+                }
+            }
+        }
+
+        public bool IsContentCollapsed
+        {
+            get => _isContentCollapsed;
+            set
+            {
+                if (_isContentCollapsed != value)
+                {
+                    _isContentCollapsed = value;
+                    OnIsContentCollapsedChanged(); // Метод для изменения высоты и фона
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -704,6 +721,41 @@ namespace DollOverlay
         // Имя процесса игры для отслеживания
         private const string TargetProcessName = "sphereclient";
         private IntPtr _gameWindowHandle = IntPtr.Zero;
+
+        private void ToggleCollapseButton_Click(object sender, RoutedEventArgs e)
+        {
+            IsContentCollapsed = !IsContentCollapsed;
+        }
+
+        private void OnIsContentCollapsedChanged()
+        {
+            const double collapsedHeight = 30.0; // Высота верхней панели
+            if (IsContentCollapsed)
+            {
+                // Сохраняем текущую высоту перед сворачиванием
+                _expandedHeight = this.Height;
+
+                // Сворачиваем окно
+                this.MinHeight = collapsedHeight;
+                this.Height = collapsedHeight;
+
+                // Если фон прозрачный, делаем его видимым принудительно
+                if (!isBackgroundOpaque)
+                {
+                    this.Background = new SolidColorBrush(Color.FromArgb(255, 6, 27, 61));
+                }
+            }
+            else // Разворачиваем
+            {
+                this.MinHeight = 200; // Минимальная высота в развернутом виде
+                this.Height = _expandedHeight;
+
+                if (!isBackgroundOpaque)
+                {
+                    this.Background = new SolidColorBrush(Colors.White) { Opacity = 0.01 };
+                }
+            }
+        }
 
         // Новая логика для таймера
         private void TopmostTimer_Tick(object sender, EventArgs e)
@@ -856,9 +908,7 @@ namespace DollOverlay
             }
             else
             {
-                // Если нет, выводим ошибку
-                MessageBox.Show("Введите время в правильном формате: hh mm, hh:mm или hh.mm", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                // Очищаем поле, чтобы пользователь мог ввести заново
+                EditErrorTextBlock.Text = "Введите время в правильном формате: hh mm, hh:mm или hh.mm";
                 FillingTimeTextBox.Text = string.Empty;
             }
         }
@@ -1046,10 +1096,10 @@ namespace DollOverlay
 
         private void Window_MouseLeave(object sender, MouseEventArgs e)
         {
-            // Проверяем, был ли фон изначально установлен как прозрачный
+            if (IsContentCollapsed) return;
+
             if (!isBackgroundOpaque)
             {
-                // Возвращаем фон к прозрачному состоянию при уходе мыши
                 this.Background = new SolidColorBrush(Colors.White) { Opacity = 0.01 };
             }
         }
@@ -1135,7 +1185,7 @@ namespace DollOverlay
                 {
                     Top = this.Top,
                     Left = this.Left,
-                    Height = this.Height,
+                    Height = IsContentCollapsed ? _expandedHeight : this.Height,
                     Width = this.Width,
                     SelectedTableId = _selectedTableId,
                     IsBackgroundOpaque = isBackgroundOpaque
@@ -1680,6 +1730,54 @@ namespace DollOverlay
             }
         }
 
+        private void SelectAllLocks_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Установить все замки (добавить все уровни в hiddenLevels)
+            hiddenLevels.Clear();
+            foreach (int level in AllLevels)
+            {
+                hiddenLevels.Add(level);
+            }
+
+            // 2. Обновить внешний вид всех кнопок-уровней
+            // Перебираем все элементы внутри StackPanel, чтобы найти кнопки с числовым Tag (уровни)
+            foreach (var child in TimeButtonsPanel.Children)
+            {
+                // Проверяем, что это кнопка с числовым Tag (чтобы не трогать кнопки-иконки)
+                if (child is Button button && button.Tag != null && int.TryParse(button.Tag.ToString(), out _))
+                {
+                    // Устанавливаем стиль "скрыто"
+                    button.Background = Brushes.Transparent;
+                    button.Foreground = Brushes.DarkSlateGray;
+                }
+            }
+
+            // 3. Применить фильтр
+            ApplyFilterAndSort();
+        }
+
+        private void RemoveAllLocks_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Снять все замки (очистить hiddenLevels)
+            hiddenLevels.Clear();
+
+            // 2. Обновить внешний вид всех кнопок-уровней
+            // Перебираем все элементы внутри StackPanel, чтобы найти кнопки с числовым Tag
+            foreach (var child in TimeButtonsPanel.Children)
+            {
+                // Проверяем, что это кнопка с числовым Tag
+                if (child is Button button && button.Tag != null && int.TryParse(button.Tag.ToString(), out _))
+                {
+                    // Устанавливаем стиль "видимо"
+                    button.Background = Brushes.Transparent;
+                    button.Foreground = Brushes.White;
+                }
+            }
+
+            // 3. Применить фильтр
+            ApplyFilterAndSort();
+        }
+
         private void ApplyFilterAndSort()
         {
             _castlesObservable.Clear();
@@ -1691,7 +1789,7 @@ namespace DollOverlay
                 _castlesObservable.Add(castle);
             }
 
-            SortCastles();
+            // SortCastles();
         }
 
         private void UpdateDataGrid(WebSocketDataUpdate? update)
@@ -1915,7 +2013,7 @@ namespace DollOverlay
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             SaveWindowPosition();
-            SaveButtonSettings(); // Сохраняем состояние кнопок
+            SaveButtonSettings();
             SaveColumnOrder();
 
             if (_webSocket.State == WebSocketState.Open)

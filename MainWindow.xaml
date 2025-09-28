@@ -454,8 +454,9 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Margin="0"
-                      VerticalAlignment="Top">
+                        Margin="0"
+                        VerticalAlignment="Top">
+                        
                         <Grid.Style>
                                 <Style TargetType="{x:Type Grid}">
                                 <Setter Property="Visibility" Value="Hidden"/>
@@ -463,93 +464,22 @@
                                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=IsMouseOver}" Value="True">
                                         <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsContentCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
                                 </Style.Triggers>
                                 </Style>
                         </Grid.Style>
+
                         <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Button x:Name="LogoutButton"
-                                Grid.Column="1"
-                                Width="30"
-                                Height="30"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                BorderBrush="Transparent"
-                                Foreground="White"
-                                FontSize="16"
-                                FontWeight="Normal"
-                                Click="LogoutButton_Click"
-                                Margin="0"
-                                Visibility="{Binding ElementName=TablesPanel, Path=Visibility}">
-                                <Path Data="M14,7.63636L14,4.5C14,4.22386 13.7761,4 13.5,4L4.5,4C4.22386,4 4,4.22386 4,4.5L4,19.5C4,19.7761 4.22386,20 4.5,20L13.5,20C13.7761,20 14,19.7761 14,19.5L14,16.3636 M10,12L21,12 
- M21,12L18.0004,8.5 M21,12L18,15.5"
-                                      Stretch="Uniform"
-                                      Stroke="White"
-                                      StrokeThickness="2"
-                                      Width="15"
-                                      Height="15"
-                                      VerticalAlignment="Center"
-                                      HorizontalAlignment="Center"/>
-                        </Button>
-
-
-                        <Button x:Name="BackButton"
-                                Grid.Column="2"
-                                Width="30"
-                                Height="30"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                BorderBrush="Transparent"
-                                FontSize="16"
-                                Foreground="White"
-                                FontWeight="Bold"
-                                Click="BackButton_Click"
-                                Margin="20,0,0,0"
-                                Visibility="{Binding ElementName=TablesScrollViewer, Path=Visibility}">
-                                <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
-                                      Stretch="Uniform"
-                                      Stroke="White"
-                                      StrokeThickness="2"
-                                      Width="15"
-                                      Height="15"
-                                      VerticalAlignment="Center"
-                                      HorizontalAlignment="Center"/>
-                        </Button>
-
-
-                        <Button x:Name="BackFromEditButton"
-                                Grid.Column="2"
-                                Width="30"
-                                Height="30"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                BorderBrush="Transparent"
-                                FontSize="16"
-                                Foreground="White"
-                                FontWeight="Bold"
-                                Click="BackFromEditButton_Click"
-                                Margin="20,0,0,0"
-                                Visibility="{Binding ElementName=EditCastleScroll, Path=Visibility}">
-                                <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
-                                      Stretch="Uniform"
-                                      Stroke="White"
-                                      StrokeThickness="2"
-                                      Width="15"
-                                      Height="15"
-                                      VerticalAlignment="Center"
-                                      HorizontalAlignment="Center"/>
-                        </Button>
-
-
-                        <StackPanel Grid.Column="3"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Top">
+                        <StackPanel Grid.Column="0"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top">
                                 <Button x:Name="ToggleBackgroundButton"
                                         Width="30"
                                         Height="30"
@@ -561,18 +491,105 @@
                                         Click="ToggleBackgroundButton_Click"
                                         Margin="0"
                                         FocusVisualStyle="{x:Null}">
-
-                                        <Path Data="M11 1C11 0.447715 11.4477 0 12 0C12.5523 0 13 0.447715 13 1V3C13 3.55228 12.5523 4 12 4C11.4477 4 11 3.55228 11 3V1Z M18 12C18 15.3137 15.3137 18 12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12ZM8.06167 12C8.06167 14.1751 9.82492 15.9383 12 15.9383C14.1751 15.9383 15.9383 14.1751 15.9383 12C15.9383 9.82492 14.1751 8.06167 12 8.06167C9.82492 8.06167 8.06167 9.82492 8.06167 12Z M20.4853 3.51472C20.0947 3.12419 19.4616 3.12419 19.0711 3.51472L17.6568 4.92893C17.2663 5.31946 17.2663 5.95262 17.6568 6.34315C18.0474 6.73367 18.6805 6.73367 19.0711 6.34315L20.4853 4.92893C20.8758 4.53841 20.8758 3.90524 20.4853 
- 3.51472Z M1 13C0.447715 13 0 12.5523 0 12C0 11.4477 0.447715 11 1 11H3C3.55228 11 4 11.4477 4 12C4 12.5523 3.55228 13 3 13H1Z M3.51472 3.51472C3.1242 3.90524 3.1242 4.53841 3.51472 4.92893L4.92894 6.34315C5.31946 6.73367 5.95263 6.73367 6.34315 6.34315C6.73368 5.95262 6.73368 5.31946 6.34315 4.92893L4.92894 3.51472C4.53841 3.12419 3.90525 3.12419 3.51472 3.51472Z M11 21C11 20.4477 11.4477 20 12 20C12.5523 20 13 20.4477 13 21V23C13 23.5523 12.5523 24 12 24C11.4477 24 11 23.5523 11 23V21Z M6.34315 17.6569C5.95263 17.2663 5.31946 17.2663 4.92894 17.6569L3.51473 19.0711C3.1242 19.4616 3.1242 20.0948 3.51473 20.4853C3.90525 20.8758 4.53842 20.8758 4.92894 20.4853L6.34315 19.0711C6.73368 18.6805 6.73368 18.0474 6.34315 17.6569Z M21 13C20.4477 13 20 12.5523 20 12C20 
- 11.4477 20.4477 11 21 11H23C23.5523 11 24 11.4477 24 12C24 12.5523 23.5523 13 23 13H21Z M17.6568 17.6569C17.2663 18.0474 17.2663 18.6805 17.6568 19.0711L19.0711 20.4853C19.4616 20.8758 20.0947 20.8758 20.4853 20.4853C20.8758 20.0948 20.8758 19.4616 20.4853 19.0711L19.0711 17.6569C18.6805 17.2663 18.0474 17.2663 17.6568 17.6569Z"
-                                              Stretch="Uniform"
-                                              Fill="White"
-                                              Width="18"
-                                              Height="18"
-                                              VerticalAlignment="Center"
-                                              HorizontalAlignment="Center"/>
-
+                                        <Path Data="M11 1C11 0.447715 11.4477 0 12 0C12.5523 0 13 0.447715 13 1V3C13 3.55228 12.5523 4 12 4C11.4477 4 11 3.55228 11 3V1Z M18 12C18 15.3137 15.3137 18 12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12ZM8.06167 12C8.06167 14.1751 9.82492 15.9383 12 15.9383C14.1751 15.9383 15.9383 14.1751 15.9383 12C15.9383 9.82492 14.1751 8.06167 12 8.06167C9.82492 8.06167 8.06167 9.82492 8.06167 12Z M20.4853 3.51472C20.0947 3.12419 19.4616 3.12419 19.0711 3.51472L17.6568 4.92893C17.2663 5.31946 17.2663 5.95262 17.6568 6.34315C18.0474 6.73367 18.6805 6.73367 19.0711 6.34315L20.4853 4.92893C20.8758 4.53841 20.8758 3.90524 20.4853 3.51472Z M1 13C0.447715 13 0 12.5523 0 12C0 11.4477 0.447715 11 1 11H3C3.55228 11 4 11.4477 4 12C4 12.5523 3.55228 13 3 13H1Z M3.51472 3.51472C3.1242 3.90524 3.1242 4.53841 3.51472 4.92893L4.92894 6.34315C5.31946 6.73367 5.95263 6.73367 6.34315 6.34315C6.73368 5.95262 6.73368 5.31946 6.34315 4.92893L4.92894 3.51472C4.53841 3.12419 3.90525 3.12419 3.51472 3.51472Z M11 21C11 20.4477 11.4477 20 12 20C12.5523 20 13 20.4477 13 21V23C13 23.5523 12.5523 24 12 24C11.4477 24 11 23.5523 11 23V21Z M6.34315 17.6569C5.95263 17.2663 5.31946 17.2663 4.92894 17.6569L3.51473 19.0711C3.1242 19.4616 3.1242 20.0948 3.51473 20.4853C3.90525 20.8758 4.53842 20.8758 4.92894 20.4853L6.34315 19.0711C6.73368 18.6805 6.73368 18.0474 6.34315 17.6569Z M21 13C20.4477 13 20 12.5523 20 12C20 11.4477 20.4477 11 21 11H23C23.5523 11 24 11.4477 24 12C24 12.5523 23.5523 13 23 13H21Z M17.6568 17.6569C17.2663 18.0474 17.2663 18.6805 17.6568 19.0711L19.0711 20.4853C19.4616 20.8758 20.0947 20.8758 20.4853 20.4853C20.8758 20.0948 20.8758 19.4616 20.4853 19.0711L19.0711 17.6569C18.6805 17.2663 18.0474 17.2663 17.6568 17.6569Z"
+                                                Stretch="Uniform"
+                                                Fill="White"
+                                                Width="18"
+                                                Height="18"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"/>
                                 </Button>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Top">
+                                <Button x:Name="LogoutButton"
+                                        Width="30"
+                                        Height="30"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        BorderBrush="Transparent"
+                                        Foreground="White"
+                                        FontSize="16"
+                                        FontWeight="Normal"
+                                        Click="LogoutButton_Click"
+                                        Margin="5,0,0,0"
+                                        Visibility="{Binding ElementName=TablesPanel, Path=Visibility}">
+                                        <Path Data="M14,7.63636L14,4.5C14,4.22386 13.7761,4 13.5,4L4.5,4C4.22386,4 4,4.22386 4,4.5L4,19.5C4,19.7761 4.22386,20 4.5,20L13.5,20C13.7761,20 14,19.7761 14,19.5L14,16.3636 M10,12L21,12 M21,12L18.0004,8.5 M21,12L18,15.5"
+                                                Stretch="Uniform"
+                                                Stroke="White"
+                                                StrokeThickness="2"
+                                                Width="15"
+                                                Height="15"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"/>
+                                </Button>
+                                <Button x:Name="BackButton"
+                                        Width="30"
+                                        Height="30"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        BorderBrush="Transparent"
+                                        FontSize="16"
+                                        Foreground="White"
+                                        FontWeight="Bold"
+                                        Click="BackButton_Click"
+                                        Margin="0,0,0,0"
+                                        Visibility="{Binding ElementName=TablesScrollViewer, Path=Visibility}">
+                                <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
+                                        Stretch="Uniform"
+                                        Stroke="White"
+                                        StrokeThickness="2"
+                                        Width="15"
+                                        Height="15"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"/>
+                                </Button>
+
+                                <Button x:Name="BackFromEditButton"
+                                        Width="30"
+                                        Height="30"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        BorderBrush="Transparent"
+                                        FontSize="16"
+                                        Foreground="White"
+                                        FontWeight="Bold"
+                                        Click="BackFromEditButton_Click"
+                                        Margin="0,0,0,0"
+                                        Visibility="{Binding ElementName=EditCastleScroll, Path=Visibility}">
+                                <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
+                                        Stretch="Uniform"
+                                        Stroke="White"
+                                        StrokeThickness="2"
+                                        Width="15"
+                                        Height="15"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"/>
+                                </Button>
+                                
+                                <Button x:Name="ToggleCollapseButton"
+                                        Width="30"
+                                        Height="30"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Click="ToggleCollapseButton_Click">
+                                <Path Fill="White" Stretch="Uniform" Width="12" Height="12">
+                                        <Path.Style>
+                                        <Style TargetType="Path">
+                                                <Setter Property="Data" Value="M 0 0 L 6 6 L 12 0 Z"/>
+                                                <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsContentCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                        <Setter Property="Data" Value="M 0 6 L 6 0 L 12 6 Z"/>
+                                                </DataTrigger>
+                                                </Style.Triggers>
+                                        </Style>
+                                        </Path.Style>
+                                </Path>
+                                </Button>
+                                
                                 <Button x:Name="CloseButton"
                                         Width="30"
                                         FontSize="16"
@@ -583,18 +600,16 @@
                                         Foreground="White"
                                         Click="CloseButton_Click"
                                         Margin="0">
-                                        <Path Data="M20.7457 3.32851C20.3552 2.93798 19.722 2.93798 19.3315 3.32851L12.0371 10.6229L4.74275 3.32851C4.35223 2.93798 3.71906 2.93798 3.32854 3.32851C2.93801 3.71903 2.93801 4.3522 3.32854 4.74272L10.6229 12.0371L3.32856 19.3314C2.93803 19.722 2.93803 20.3551 3.32856 20.7457C3.71908 21.1362 4.35225 21.1362 
- 4.74277 20.7457L12.0371 13.4513L19.3315 20.7457C19.722 21.1362 20.3552 21.1362 20.7457 20.7457C21.1362 20.3551 21.1362 19.722 20.7457 19.3315L13.4513 12.0371L20.7457 4.74272C21.1362 4.3522 21.1362 3.71903 20.7457 3.32851Z"
-                                              Stretch="Uniform"
-                                              Fill="White"
-                                              Width="14"
-                                              Height="14"
-                                              VerticalAlignment="Center"
-                                              HorizontalAlignment="Center"/>
+                                <Path Data="M20.7457 3.32851C20.3552 2.93798 19.722 2.93798 19.3315 3.32851L12.0371 10.6229L4.74275 3.32851C4.35223 2.93798 3.71906 2.93798 3.32854 3.32851C2.93801 3.71903 2.93801 4.3522 3.32854 4.74272L10.6229 12.0371L3.32856 19.3314C2.93803 19.722 2.93803 20.3551 3.32856 20.7457C3.71908 21.1362 4.35225 21.1362 4.74277 20.7457L12.0371 13.4513L19.3315 20.7457C19.722 21.1362 20.3552 21.1362 20.7457 20.7457C21.1362 20.3551 21.1362 19.722 20.7457 19.3315L13.4513 12.0371L20.7457 4.74272C21.1362 4.3522 21.1362 3.71903 20.7457 3.32851Z"
+                                        Stretch="Uniform"
+                                        Fill="White"
+                                        Width="14"
+                                        Height="14"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"/>
                                 </Button>
-
                         </StackPanel>
-                </Grid>
+                        </Grid>
 
                 <StackPanel Orientation="Horizontal"
                             Grid.Row="1"
@@ -739,7 +754,7 @@
                                   FontSize="16"
                                   AlternatingRowBackground="Transparent"
                                   HeadersVisibility="Column"
-                                  GridLinesVisibility="Horizontal"
+                                  GridLinesVisibility="None"
                                   HorizontalGridLinesBrush="#80555555"
                                   VerticalGridLinesBrush="#80555555"
                                   CanUserSortColumns="False"
@@ -756,6 +771,15 @@
                 <Grid x:Name="MainContent"
                       Grid.Row="1"
                       Margin="8,0,8,8">
+                        <Grid.Style>
+                                <Style TargetType="Grid">
+                                        <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsContentCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                        </Style.Triggers>
+                                </Style>
+                        </Grid.Style>
                         <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
@@ -779,22 +803,23 @@
                                           CanUserDeleteRows="False"
                                           CanUserReorderColumns="True"
                                           HeadersVisibility="Column"
-                                          GridLinesVisibility="Horizontal"
+                                          GridLinesVisibility="None"
                                           HorizontalGridLinesBrush="#80555555"
                                           VerticalGridLinesBrush="#80555555"
-                                          CanUserSortColumns="False"
+                                          CanUserSortColumns="True"
                                           MouseLeftButtonUp="CastlesDataGrid_MouseLeftButtonUp">
                                         <DataGrid.Resources>
                                                 <Style x:Key="{x:Static DataGrid.FocusVisualStyleProperty}" TargetType="Control"/>
                                                 <Style TargetType="DataGridCell">
                                                         <Setter Property="HorizontalAlignment" Value="Center"/>
-                                                <Style.Triggers>
-                                                        <Trigger Property="IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="Transparent"/>
-                                                        <Setter Property="Foreground" Value="White"/>
-                                                        <Setter Property="BorderBrush" Value="Transparent"/>
-                                                </Trigger>
-                                                </Style.Triggers>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Style.Triggers>
+                                                                <Trigger Property="IsSelected" Value="True">
+                                                                        <Setter Property="Background" Value="Transparent"/>
+                                                                        <Setter Property="Foreground" Value="White"/>
+                                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                                </Trigger>
+                                                        </Style.Triggers>
                                                 </Style>
                                         </DataGrid.Resources>
                                         <DataGrid.RowStyle>
@@ -831,8 +856,8 @@
                                                 <DataGridTextColumn Header="Замок"
                                                                     Binding="{Binding nameRu}"
                                                                     SortMemberPath="nameRu"
-                                                                    Width="Auto"
-                                                                    MinWidth="110">
+                                                                    Width="120"
+                                                                    MinWidth="120">
                                                         <DataGridTextColumn.ElementStyle>
                                                                 <Style TargetType="TextBlock">
                                                                         <Setter Property="VerticalAlignment"
@@ -856,10 +881,23 @@
                                                                 </Style>
                                                         </DataGridTextColumn.ElementStyle>
                                                 </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Лить"
+                                                                    Binding="{Binding WhiteTimeExact, StringFormat='HH:mm'}"
+                                                                    Width="Auto"
+                                                                    MinWidth="70">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                            <Setter Property="Margin" Value="7,0"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                
                                                 <DataGridTemplateColumn Header="Через"
                                                                         Width="Auto"
                                                                         MinWidth="70"
-                                                                        SortMemberPath="WhiteTime">
+                                                                        SortMemberPath="WhiteTimeExact">
                                                         <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                         <TextBlock Text="{Binding WhiteTime}"
@@ -872,6 +910,8 @@
                                                                                                         Value="Bold"/>
                                                                                                 <Setter Property="Margin"
                                                                                                         Value="7,0"/>
+                                                                                                <Setter Property="VerticalAlignment"
+                                                                                                        Value="Center"/>
                                                                                                 <Style.Triggers>
                                                                                                         <DataTrigger Binding="{Binding WhiteTime}"
                                                                                                                      Value="-">
@@ -899,13 +939,15 @@
                                                                 <Style TargetType="TextBlock">
                                                                         <Setter Property="Margin"
                                                                                 Value="7,0"/>
+                                                                        <Setter Property="VerticalAlignment"
+                                                                                Value="Center"/>
                                                                 </Style>
                                                         </DataGridTextColumn.ElementStyle>
                                                 </DataGridTextColumn>
                                                 <DataGridTemplateColumn Header="Спад"
                                                                         Width="Auto"
                                                                         MinWidth="70"
-                                                                        SortMemberPath="RedTime">
+                                                                        SortMemberPath="RedTimeExact">
                                                         <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                         <TextBlock Text="{Binding RedTime}"
@@ -918,6 +960,8 @@
                                                                                                         Value="Bold"/>
                                                                                                 <Setter Property="Margin"
                                                                                                         Value="7,0"/>
+                                                                                                <Setter Property="VerticalAlignment"
+                                                                                                        Value="Center"/>
                                                                                                 <Style.Triggers>
                                                                                                         <DataTrigger Binding="{Binding RedTime}"
                                                                                                                      Value="-">
@@ -936,6 +980,18 @@
                                                                 </DataTemplate>
                                                         </DataGridTemplateColumn.CellTemplate>
                                                 </DataGridTemplateColumn>
+                                                <DataGridTextColumn Header="Комментарий"
+                                                                    Binding="{Binding commentary}"
+                                                                    Width="Auto"
+                                                                    MinWidth="150">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                                                            <Setter Property="Margin" Value="7,0"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
                                                 <DataGridTextColumn Header="Клан"
                                                                     Binding="{Binding OwnerClanName}"
                                                                     Width="Auto"
@@ -945,35 +1001,56 @@
                                                                 <Style TargetType="TextBlock">
                                                                         <Setter Property="Margin"
                                                                                 Value="7,0"/>
+                                                                        <Setter Property="VerticalAlignment"
+                                                                                Value="Center"/>
                                                                 </Style>
                                                         </DataGridTextColumn.ElementStyle>
                                                 </DataGridTextColumn>
+                                                
                                         </DataGrid.Columns>
                                 </DataGrid>
                         </ScrollViewer>
+
                         <StackPanel x:Name="TimeButtonsPanel"
-                                    Grid.Row="1"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Margin="0,8,0,0">
+                                Grid.Row="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="0,8,0,0">
                                 <StackPanel.Style>
                                         <Style TargetType="{x:Type StackPanel}">
+                                        <Setter Property="Visibility"
+                                                Value="Hidden" />
+                                        <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding ElementName=TablesScrollViewer, Path=Visibility}"
+                                                                Value="Visible" />
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=IsMouseOver}"
+                                                                Value="True" />
+                                                </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility"
-                                                        Value="Hidden"/>
-                                                <Style.Triggers>
-                                                        <MultiDataTrigger>
-                                                                <MultiDataTrigger.Conditions>
-                                                                        <Condition Binding="{Binding ElementName=TablesScrollViewer, Path=Visibility}"
-                                                                                   Value="Visible"/>
-                                                                        <Condition Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=IsMouseOver}"
-                                                                                   Value="True"/>
-                                                                </MultiDataTrigger.Conditions>
-                                                                <Setter Property="Visibility"
-                                                                        Value="Visible"/>
-                                                        </MultiDataTrigger>
-                                                </Style.Triggers>
+                                                        Value="Visible" />
+                                                </MultiDataTrigger>
+                                        </Style.Triggers>
                                         </Style>
                                 </StackPanel.Style>
+
+                                <Button Margin="3,0,6,0"
+                                        Click="SelectAllLocks_Click"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        BorderBrush="Transparent"
+                                        Width="20"
+                                        Height="20"
+                                        VerticalContentAlignment="Center"
+                                        HorizontalContentAlignment="Center">
+                                        <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
+                                                Fill="White"
+                                                Stretch="Uniform"
+                                                Width="14"
+                                                Height="14" />
+                                </Button>
+
                                 <Button Content="15"
                                         Margin="3,0"
                                         Tag="15"
@@ -983,7 +1060,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="30"
                                         Margin="3,0"
                                         Tag="30"
@@ -993,7 +1070,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="45"
                                         Margin="3,0"
                                         Tag="45"
@@ -1003,7 +1080,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="60"
                                         Margin="3,0"
                                         Tag="60"
@@ -1013,7 +1090,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="75"
                                         Margin="3,0"
                                         Tag="75"
@@ -1023,7 +1100,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="90"
                                         Margin="3,0"
                                         Tag="90"
@@ -1033,7 +1110,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="120"
                                         Margin="3,0"
                                         Tag="120"
@@ -1043,7 +1120,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="250"
                                         Margin="3,0"
                                         Tag="250"
@@ -1053,7 +1130,7 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
                                 <Button Content="350"
                                         Margin="3,0"
                                         Tag="350"
@@ -1063,8 +1140,25 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Foreground="White"/>
+                                        Foreground="White" />
+
+                                <Button Margin="6,0,3,0"
+                                        Click="RemoveAllLocks_Click"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        BorderBrush="Transparent"
+                                        Width="20"
+                                        Height="20"
+                                        VerticalContentAlignment="Center"
+                                        HorizontalContentAlignment="Center">
+                                                <Path Data="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
+                                                Fill="White"
+                                                Stretch="Uniform"
+                                                Width="14"
+                                                Height="14" />
+                                </Button>
                         </StackPanel>
+
                         <ScrollViewer Grid.Row="1"
                                       VerticalScrollBarVisibility="Auto"
                                       x:Name="EditCastleScroll"
