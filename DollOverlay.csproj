@@ -2,9 +2,15 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Net.Http.Json" Version="9.0.8" />
+    <PackageReference Include="TeximpNet" Version="1.4.2" />
+    <PackageReference Include="FreeImage-dotnet-core" Version="4.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="images/favicon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images\frames.png" CopyToOutputDirectory="Always" />
+    <None Include="images\i_pup1.png" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -23,9 +23,335 @@ using System.Runtime.InteropServices;
 using System.Windows.Media.Animation;
 using System.Diagnostics;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace DollOverlay
 {
+
+    // ---------------------------
+// ResizableFrameControl (fixed)
+// ---------------------------
+public class ResizableFrameControl : FrameworkElement
+{
+    private BitmapImage? _source;
+    private const int Corner = 32;
+    private const int Border = 16;
+
+    public ResizableFrameControl()
+    {
+        this.SnapsToDevicePixels = true;
+        this.UseLayoutRounding = true;
+        this.SizeChanged += (s, e) => InvalidateVisual();
+    }
+protected override void OnRender(DrawingContext dc)
+{
+    base.OnRender(dc);
+
+    if (_source == null)
+    {
+        if (!TryLoadSource())
+        {
+            return;
+        }
+    }
+
+    if (_source == null) return;
+
+    double w = this.ActualWidth;
+    double h = this.ActualHeight;
+
+    if (!IsFinite(w) || !IsFinite(h) || w <= 0 || h <= 0)
+    {
+        Debug.WriteLine($"[FRAME] Skip render: bad control size w={w} h={h}");
+        return;
+    }
+
+    double scale = 1;
+
+    // === Верхняя горизонтальная секция ===
+    Int32Rect TL = new(0, 0, 12, 31);
+    Int32Rect TLB = new(13, 0, 54, 31);
+    Int32Rect T = new(68, 0, 127, 31);
+    Int32Rect TRB = new(196, 0, 46, 31);
+    Int32Rect TR = new(243, 0, 12, 31);
+
+    // === Левая вертикальная секция ===
+    Int32Rect LT = new(0, 32, 12, 31);
+    Int32Rect L = new(0, 65, 12, 19);
+    Int32Rect LB = new(0, 307, 12, 62);
+
+    // === Правая вертикальная секция ===
+    Int32Rect RT = new(243, 32, 12, 31);
+    Int32Rect R = new(243, 65, 12, 19);
+    Int32Rect RB = new(243, 307, 12, 62);
+    
+    Int32Rect BL = new(13, 356, 51, 12);    // XY1 = 13,356; XY2 = 64,368 → width=51, height=12
+    Int32Rect B = new(65, 356, 131, 12);    // XY1 = 65,356; XY2 = 196,368 → width=131, height=12
+    Int32Rect BR = new(197, 356, 46, 12);   // XY1 = 197,356; XY2 = 243,368 → width=46, height=12
+    
+    Int32Rect C = new(13, 32, 228, 321);
+
+    // Высота верхней полосы
+    double topMaxSrcH = Math.Max(Math.Max(TL.Height, T.Height), Math.Max(TLB.Height, Math.Max(TRB.Height, TR.Height)));
+    double topHeight = topMaxSrcH * scale;
+    if (!IsFinite(topHeight) || topHeight <= 0)
+    {
+        Debug.WriteLine($"[FRAME] Skip render: invalid topHeight={topHeight}");
+        return;
+    }
+
+    // ФИКСИРОВАННЫЕ размеры горизонтальных частей
+    double fixedTLWidth = TL.Width * scale;
+    double fixedTRWidth = TR.Width * scale;
+    double fixedTWidth = T.Width * scale;
+    double fixedTLBWidth = TLB.Width * scale;
+    double fixedTRBWidth = TRB.Width * scale;
+
+    // ФИКСИРОВАННЫЕ размеры вертикальных частей
+    double fixedLTHeight = LT.Height * scale;
+    double fixedLHeight = L.Height * scale;
+    double fixedLBHeight = LB.Height * scale;
+    double fixedLWidth = L.Width * scale;
+
+    double fixedRTHeight = RT.Height * scale;
+    double fixedRHeight = R.Height * scale;
+    double fixedRBHeight = RB.Height * scale;
+    double fixedRWidth = R.Width * scale;
+    
+    double fixedBLWidth = BL.Width * scale;
+    double fixedBWidth = B.Width * scale;
+    double fixedBRWidth = BR.Width * scale;
+    double fixedBHeight = B.Height * scale;
+    
+    double fixedCWidth = C.Width * scale;
+    double fixedCHeight = C.Height * scale;
+
+    // --- Центральная часть (повторяется по обеим осям) ---
+    double centerStartX = fixedLWidth; // Начинаем после левой рамки
+    double centerEndX = w - fixedRWidth; // Заканчиваем перед правой рамкой
+    double centerStartY = topHeight; // Начинаем ниже верхней рамки
+    double centerEndY = h - fixedBHeight; // Заканчиваем перед нижней рамкой
+
+    // Тайлинг по горизонтали и вертикали
+    double currentCenterY = centerStartY;
+    while (currentCenterY < centerEndY)
+    {
+        double segmentHeight = Math.Min(fixedCHeight, centerEndY - currentCenterY);
+        
+        double currentCenterX = centerStartX;
+        while (currentCenterX < centerEndX)
+        {
+            double segmentWidth = Math.Min(fixedCWidth, centerEndX - currentCenterX);
+            SafeDraw(dc, C, currentCenterX, currentCenterY, segmentWidth, segmentHeight);
+            currentCenterX += fixedCWidth;
+        }
+        
+        currentCenterY += fixedCHeight;
+    }
+    
+
+    // --- Нижняя горизонтальная рамка ---
+    double bottomY = h - fixedBHeight;
+
+    // Левая часть нижней рамки (BL) - повторяется
+    double blStartX = fixedLWidth; // Начинаем после левой рамки
+    double blEndX = (w - fixedBWidth) / 2; // До начала центральной части
+    double currentBlX = blStartX;
+
+    while (currentBlX < blEndX)
+    {
+        double segmentWidth = Math.Min(fixedBLWidth, blEndX - currentBlX);
+        SafeDraw(dc, BL, currentBlX, bottomY, segmentWidth, fixedBHeight);
+        currentBlX += segmentWidth;
+    }
+
+    // Центральная часть нижней рамки (B) - фиксированная, по центру
+    double centerBottomX = (w - fixedBWidth) / 2;
+    SafeDraw(dc, B, centerBottomX, bottomY, fixedBWidth, fixedBHeight);
+
+    // Правая часть нижней рамки (BR) - повторяется
+    double brStartX = centerBottomX + fixedBWidth;
+    double brEndX = w - fixedRWidth; // До правой рамки
+    double currentBrX = brStartX;
+    
+
+    while (currentBrX < brEndX)
+    {
+        double segmentWidth = Math.Min(fixedBRWidth, brEndX - currentBrX);
+        SafeDraw(dc, BR, currentBrX, bottomY, segmentWidth, fixedBHeight);
+        currentBrX += segmentWidth;
+    }
+
+    // --- Верхние углы (фиксированные) ---
+    SafeDraw(dc, TL, 0, 0, fixedTLWidth, topHeight);
+    SafeDraw(dc, TR, w - fixedTRWidth, 0, fixedTRWidth, topHeight);
+
+    // --- Центральная часть (фиксированная, по центру) ---
+    double centerX = (w - fixedTWidth) / 2;
+    SafeDraw(dc, T, centerX, 0, fixedTWidth, topHeight);
+
+    // --- Левая переходная часть (TLB) ---
+    double tlbStartX = fixedTLWidth;
+    double tlbEndX = centerX;
+    double currentTlbX = tlbStartX;
+    
+    while (currentTlbX < tlbEndX)
+    {
+        double segmentWidth = Math.Min(fixedTLBWidth, tlbEndX - currentTlbX);
+        SafeDraw(dc, TLB, currentTlbX, 0, segmentWidth, topHeight);
+        currentTlbX += segmentWidth;
+    }
+
+    // --- Правая переходная часть (TRB) ---
+    double trbStartX = centerX + fixedTWidth;
+    double trbEndX = w - fixedTRWidth;
+    double currentTrbX = trbStartX;
+    
+    while (currentTrbX < trbEndX)
+    {
+        double segmentWidth = Math.Min(fixedTRBWidth, trbEndX - currentTrbX);
+        SafeDraw(dc, TRB, currentTrbX, 0, segmentWidth, topHeight);
+        currentTrbX += segmentWidth;
+    }
+
+    // --- Левая вертикальная рамка ---
+    double leftY = topHeight; // Начинаем ниже верхней рамки
+    
+    // Верхняя часть левой рамки (LT)
+    SafeDraw(dc, LT, 0, leftY, fixedLWidth, fixedLTHeight);
+    leftY += fixedLTHeight;
+
+    // Средняя часть левой рамки (L) - повторяется
+    double lEndY = h - fixedLBHeight; // До начала нижней части
+    double currentLY = leftY;
+    
+    while (currentLY < lEndY)
+    {
+        double segmentHeight = Math.Min(fixedLHeight, lEndY - currentLY);
+        SafeDraw(dc, L, 0, currentLY, fixedLWidth, segmentHeight);
+        currentLY += segmentHeight;
+    }
+
+    // Нижняя часть левой рамки (LB)
+    SafeDraw(dc, LB, 0, h - fixedLBHeight, fixedLWidth, fixedLBHeight);
+
+    // --- Правая вертикальная рамка ---
+    double rightY = topHeight; // Начинаем ниже верхней рамки
+    double rightX = w - fixedRWidth; // Правый край окна минус ширина правой рамки
+    
+    // Верхняя часть правой рамки (RT)
+    SafeDraw(dc, RT, rightX, rightY, fixedRWidth, fixedRTHeight);
+    rightY += fixedRTHeight;
+
+    // Средняя часть правой рамки (R) - повторяется
+    double rEndY = h - fixedRBHeight; // До начала нижней части
+    double currentRY = rightY;
+    
+    while (currentRY < rEndY)
+    {
+        double segmentHeight = Math.Min(fixedRHeight, rEndY - currentRY);
+        SafeDraw(dc, R, rightX, currentRY, fixedRWidth, segmentHeight);
+        currentRY += segmentHeight;
+    }
+
+    // Нижняя часть правой рамки (RB)
+    SafeDraw(dc, RB, rightX, h - fixedRBHeight, fixedRWidth, fixedRBHeight);
+
+    // Проверяем, есть ли место для всех частей
+    double requiredMinWidth = fixedTLWidth + fixedTLBWidth + fixedTWidth + fixedTRBWidth + fixedTRWidth;
+    if (w < requiredMinWidth)
+    {
+        Debug.WriteLine($"[FRAME] Window too narrow: {w} < {requiredMinWidth}");
+    }
+}
+    // Пытаемся синхронно загрузить изображение из папки images (рядом с exe)
+    private bool TryLoadSource()
+    {
+        try
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string path = System.IO.Path.Combine(baseDir, "images", "i_pup1.png");
+
+            if (!File.Exists(path))
+            {
+                Debug.WriteLine($"[FRAME] IMAGE NOT FOUND at: {path}");
+                return false;
+            }
+
+            var bmp = new BitmapImage();
+            bmp.BeginInit();
+            bmp.CacheOption = BitmapCacheOption.OnLoad; // ВАЖНО: загрузить синхронно
+            bmp.UriSource = new Uri(path, UriKind.Absolute);
+            bmp.EndInit();
+            bmp.Freeze();
+            _source = bmp;
+
+            Debug.WriteLine($"[FRAME] Loaded OK: {_source.PixelWidth}x{_source.PixelHeight} from {path}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[FRAME] ERROR loading image: {ex.Message}");
+            _source = null;
+            return false;
+        }
+    }
+
+    private static bool IsFinite(double v) => !(double.IsNaN(v) || double.IsInfinity(v));
+
+    /// <summary>
+    /// Безопасная отрисовка: проверяет корректность размеров и src-координат.
+    /// Не бросает исключений при некорректных входных данных, а логирует их.
+    /// </summary>
+    private void SafeDraw(DrawingContext dc, Int32Rect src, double destX, double destY, double destW, double destH)
+    {
+        // Проверка назначения размеров (учитываем NaN/Infinity)
+        if (!IsFinite(destW) || !IsFinite(destH) || !IsFinite(destX) || !IsFinite(destY))
+        {
+            Debug.WriteLine($"[FRAME] SafeDraw SKIP: dest value not finite (X={destX},Y={destY},W={destW},H={destH}) for src ({src.X},{src.Y},{src.Width},{src.Height})");
+            return;
+        }
+        if (destW <= 0 || destH <= 0)
+        {
+            Debug.WriteLine($"[FRAME] SafeDraw SKIP: dest size <= 0 (W={destW}, H={destH}) for src ({src.X},{src.Y},{src.Width},{src.Height})");
+            return;
+        }
+
+        // Проверяем исходный прямоугольник на валидность
+        if (src.Width <= 0 || src.Height <= 0)
+        {
+            Debug.WriteLine($"[FRAME] SafeDraw SKIP: src size <= 0 for src ({src.X},{src.Y},{src.Width},{src.Height})");
+            return;
+        }
+
+        // Проверяем, не выходит ли src за пределы изображения
+        if (_source == null)
+        {
+            Debug.WriteLine($"[FRAME] SafeDraw SKIP: _source == null");
+            return;
+        }
+
+        if (src.X < 0 || src.Y < 0 || src.X + src.Width > _source.PixelWidth || src.Y + src.Height > _source.PixelHeight)
+        {
+            Debug.WriteLine($"[FRAME] SafeDraw SKIP: src rect out of bounds for src ({src.X},{src.Y},{src.Width},{src.Height}) imageSize({_source.PixelWidth}x{_source.PixelHeight})");
+            return;
+        }
+
+        try
+        {
+            var part = new CroppedBitmap(_source, src);
+            dc.DrawImage(part, new Rect(destX, destY, destW, destH));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[FRAME] SafeDraw EXCEPTION: {ex.Message} src({src.X},{src.Y},{src.Width},{src.Height}) dest({destX},{destY},{destW},{destH})");
+        }
+    }
+}
+
+
     // Класс для хранения настроек окна
     public class WindowSettings
     {
@@ -620,6 +946,8 @@ namespace DollOverlay
     {
         private string? _token;
         private string? _selectedTableId;
+        private string _currentSortColumn = "DefaultSort";
+        private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
         private readonly HttpClient _httpClient = new HttpClient();
         private ClientWebSocket _webSocket = new ClientWebSocket();
         private CancellationTokenSource _cts = new CancellationTokenSource();
@@ -1604,7 +1932,17 @@ namespace DollOverlay
 
                     LoadButtonSettings();
                     UpdateButtonAppearance();
-                    ApplyFilterAndSort();
+                    
+                    // Сбрасываем сортировку на дефолтную при каждой загрузке таблицы
+                    _currentSortColumn = "DefaultSort";
+                    _currentSortDirection = ListSortDirection.Ascending;
+                    // Убираем старые индикаторы сортировки с колонок
+                    foreach (var col in CastlesDataGrid.Columns)
+                    {
+                        col.SortDirection = null;
+                    }
+
+                    ApplyFilterAndSort(); // Применяем фильтр и сортировку по умолчанию
                     _refreshTimer.Start();
                     
                     await ConnectAndJoinTableAsync(selectedTable.id);
@@ -1777,19 +2115,125 @@ namespace DollOverlay
             // 3. Применить фильтр
             ApplyFilterAndSort();
         }
+        
+        private Func<Castle, object> GetKeySelector(string sortColumn)
+        {
+            switch (sortColumn)
+            {
+                case "nameRu": // "Замок"
+                    return c => c.lvl ?? 0;
+                case "WhiteTimeExact": // "Лить" и "Через"
+                    return c => c.WhiteTimeExact;
+                case "RedTimeExact": // "Спад"
+                    return c => c.RedTimeExact;
+                case "OwnerClanName": // "Клан"
+                    return c => c.OwnerClanName ?? string.Empty;
+                default:
+                    // По умолчанию, если что-то пошло не так
+                    return c => c.id;
+            }
+        }
+
+        private void CastlesDataGrid_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true;
+
+            string column = e.Column.SortMemberPath;
+
+            // Список колонок, для которых разрешена сортировка
+            var sortableColumns = new[] { "nameRu", "WhiteTimeExact", "RedTimeExact", "OwnerClanName" };
+            if (!sortableColumns.Contains(column))
+            {
+                return; // Если кликнули по другой колонке, ничего не делаем
+            }
+
+            // Определяем направление и колонку для новой сортировки
+            if (_currentSortColumn == column)
+            {
+                // Если кликнули по той же колонке, меняем направление
+                _currentSortDirection = _currentSortDirection == ListSortDirection.Ascending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending;
+            }
+            else
+            {
+                // Если кликнули по новой колонке, устанавливаем ее и сбрасываем направление на "по возрастанию"
+                _currentSortColumn = column;
+                _currentSortDirection = ListSortDirection.Ascending;
+            }
+
+            // Применяем новую сортировку
+            ApplyFilterAndSort();
+
+            // Обновляем визуальные индикаторы (стрелочки) на заголовках колонок
+            foreach (var col in CastlesDataGrid.Columns)
+            {
+                if (col.SortMemberPath == column)
+                {
+                    col.SortDirection = _currentSortDirection;
+                }
+                else
+                {
+                    // Убираем стрелочку с других колонок
+                    col.SortDirection = null;
+                }
+            }
+        }
 
         private void ApplyFilterAndSort()
         {
+            // 1. Фильтруем оригинальный список по выбранным уровням
+            var filteredCastles = originalCastles.Where(c => c.lvl.HasValue && !hiddenLevels.Contains(c.lvl.Value));
+
+            // 2. Разделяем отфильтрованный список на три основные группы
+            var castlesWithTime = filteredCastles
+                .Where(c => c.WhiteTime != "N/A" && c.WhiteTime != "-")
+                .ToList();
+
+            var castlesReadyToFill = filteredCastles
+                .Where(c => c.WhiteTime == "-")
+                .ToList();
+
+            var castlesNotAvailable = filteredCastles
+                .Where(c => c.WhiteTime == "N/A")
+                .ToList();
+
+            // 3. Сортируем каждую группу отдельно
+
+            // Обрабатываем специальный случай сортировки по умолчанию
+            if (_currentSortColumn == "DefaultSort")
+            {
+                castlesWithTime = castlesWithTime.OrderBy(c => c.WhiteTimeExact).ToList();
+                castlesReadyToFill = castlesReadyToFill.OrderByDescending(c => c.WhiteTimeExact).ToList();
+                // Группа N/A не сортируется по умолчанию
+            }
+            else // Обрабатываем сортировку по клику на колонку
+            {
+                // Получаем "ключ" для сортировки (по какому полю сортировать)
+                Func<Castle, object> keySelector = GetKeySelector(_currentSortColumn);
+
+                if (_currentSortDirection == ListSortDirection.Ascending)
+                {
+                    castlesWithTime = castlesWithTime.OrderBy(keySelector).ToList();
+                    castlesReadyToFill = castlesReadyToFill.OrderBy(keySelector).ToList();
+                    castlesNotAvailable = castlesNotAvailable.OrderBy(keySelector).ToList();
+                }
+                else // ListSortDirection.Descending
+                {
+                    castlesWithTime = castlesWithTime.OrderByDescending(keySelector).ToList();
+                    castlesReadyToFill = castlesReadyToFill.OrderByDescending(keySelector).ToList();
+                    castlesNotAvailable = castlesNotAvailable.OrderByDescending(keySelector).ToList();
+                }
+            }
+
+            // 4. Объединяем группы обратно в один список и обновляем коллекцию для отображения
+            var finalSortedList = castlesWithTime.Concat(castlesReadyToFill).Concat(castlesNotAvailable);
+
             _castlesObservable.Clear();
-
-            var filteredCastles = originalCastles.Where(c => c.lvl.HasValue && !hiddenLevels.Contains(c.lvl.Value)).ToList();
-
-            foreach (var castle in filteredCastles)
+            foreach (var castle in finalSortedList)
             {
                 _castlesObservable.Add(castle);
             }
-
-            // SortCastles();
         }
 
         private void UpdateDataGrid(WebSocketDataUpdate? update)

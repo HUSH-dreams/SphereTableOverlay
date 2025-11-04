@@ -11,6 +11,8 @@
         Topmost="True"
         Icon="images/favicon.ico"
         ShowInTaskbar="False"
+        MinWidth="150"
+        MinHeight="100"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         MouseEnter="Window_MouseEnter"
         MouseLeave="Window_MouseLeave"
@@ -447,7 +449,11 @@
                                  Color="#061b3d "/>
         </Window.Background>
 
+
         <Grid>
+                <local:ResizableFrameControl x:Name="OverlayFrame" />
+
+                <Grid>
                 <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -798,7 +804,7 @@
                                           FontSize="16"
                                           Foreground="White"
                                           RowBackground="Transparent"
-                                          AlternatingRowBackground="#80444444"
+                                          AlternatingRowBackground="Transparent"
                                           CanUserAddRows="False"
                                           CanUserDeleteRows="False"
                                           CanUserReorderColumns="True"
@@ -807,7 +813,9 @@
                                           HorizontalGridLinesBrush="#80555555"
                                           VerticalGridLinesBrush="#80555555"
                                           CanUserSortColumns="True"
-                                          MouseLeftButtonUp="CastlesDataGrid_MouseLeftButtonUp">
+                                          MouseLeftButtonUp="CastlesDataGrid_MouseLeftButtonUp"
+                                          Sorting="CastlesDataGrid_Sorting"
+                                          >
                                         <DataGrid.Resources>
                                                 <Style x:Key="{x:Static DataGrid.FocusVisualStyleProperty}" TargetType="Control"/>
                                                 <Style TargetType="DataGridCell">
@@ -1299,5 +1307,7 @@
                                 </StackPanel>
                         </ScrollViewer>
                 </Grid>
+        </Grid>
+
         </Grid>
 </Window>
