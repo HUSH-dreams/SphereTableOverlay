@@ -12,6 +12,12 @@
     <None Include="images\frames.png" CopyToOutputDirectory="Always" />
     <None Include="images\i_pup1.png" CopyToOutputDirectory="Always" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="images\*.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>

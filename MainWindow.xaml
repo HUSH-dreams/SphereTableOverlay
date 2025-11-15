@@ -11,11 +11,11 @@
         Topmost="True"
         Icon="images/favicon.ico"
         ShowInTaskbar="False"
-        MinWidth="150"
-        MinHeight="100"
+        MinWidth="250"
+        MinHeight="300"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
-        MouseEnter="Window_MouseEnter"
-        MouseLeave="Window_MouseLeave"
+        MouseEnter="MainFrame_MouseEnter"
+        MouseLeave="MainFrame_MouseLeave"
         WindowStartupLocation="Manual">
 
         <WindowChrome.WindowChrome>
@@ -25,6 +25,7 @@
                               GlassFrameThickness="0"/>
         </WindowChrome.WindowChrome>
         <Window.Resources>
+                <local:OpacityToVisibilityConverter x:Key="OpacityToVisibilityConverter"/>
                 <Style x:Key="BaseTextBoxStyle"
                        TargetType="TextBox">
                         <Setter Property="FontSize"
@@ -442,18 +443,136 @@
                                         AutoReverse="True"/>
                 </Storyboard>
         </Window.Resources>
-
         <Window.Background>
-
-                <SolidColorBrush Opacity="1"
-                                 Color="#061b3d "/>
+                <SolidColorBrush Color="Black" Opacity="0.01"/>
         </Window.Background>
 
-
         <Grid>
-                <local:ResizableFrameControl x:Name="OverlayFrame" />
+           <Grid x:Name="MainFrame" Opacity="0.0" >
+    <!-- 5 колонок -->
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/> <!-- TL / LT / L / LB / BL -->
+        <ColumnDefinition Width="*"/>    <!-- TLB (repeat) -->
+        <ColumnDefinition Width="Auto"/> <!-- T (fixed) -->
+        <ColumnDefinition Width="*"/>    <!-- TRB (repeat) -->
+        <ColumnDefinition Width="Auto"/> <!-- TR / RT / R / RB / BR -->
+    </Grid.ColumnDefinitions>
+    
+    <!-- 5 рядов -->
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>   <!-- TL / TLB / T / TRB / TR -->
+        <RowDefinition Height="Auto"/>   <!-- LT / RT -->
+        <RowDefinition Height="*"/>      <!-- L / C / R (repeat vertical) -->
+        <RowDefinition Height="Auto"/>   <!-- LB / RB -->
+        <RowDefinition Height="Auto"/>   <!-- BL / BLB / B / BRB / BR -->
+    </Grid.RowDefinitions>
 
-                <Grid>
+    <!-- === ВЕРХНЯЯ ЧАСТЬ (ряд 0) === -->
+    <Image Grid.Row="0" Grid.Column="0" Source="images/TL.png" Stretch="None"/>
+    
+    <!-- TLB - повторяется по горизонтали -->
+    <Border Grid.Row="0" Grid.Column="1">
+        <Border.Background>
+            <ImageBrush ImageSource="images/TLB.png" 
+                       TileMode="Tile" 
+                       Viewport="0,0,54,32" 
+                       ViewportUnits="Absolute"
+                       Stretch="None"/>
+        </Border.Background>
+    </Border>
+    
+    <Image Grid.Row="0" Grid.Column="2" Source="images/T.png" Stretch="None"/>
+    
+    <!-- TRB - повторяется по горизонтали -->
+    <Border Grid.Row="0" Grid.Column="3">
+        <Border.Background>
+            <ImageBrush ImageSource="images/TRB.png" 
+                       TileMode="Tile" 
+                       Viewport="0,0,46,32" 
+                       ViewportUnits="Absolute"
+                       Stretch="None"/>
+        </Border.Background>
+    </Border>
+    
+    <Image Grid.Row="0" Grid.Column="4" Source="images/TR.png" Stretch="None"/>
+
+    <!-- === ЛЕВАЯ ВЕРТИКАЛЬНАЯ ЧАСТЬ === -->
+    <Image Grid.Row="1" Grid.Column="0" Source="images/LT.png" Stretch="None"/>
+    
+    <!-- L - повторяется по вертикали -->
+    <Border Grid.Row="2" Grid.Column="0">
+        <Border.Background>
+            <ImageBrush ImageSource="images/L.png" 
+                       TileMode="Tile" 
+                       Viewport="0,0,13,19" 
+                       ViewportUnits="Absolute"
+                       Stretch="None"/>
+        </Border.Background>
+    </Border>
+    
+    <Image Grid.Row="3" Grid.Column="0" Source="images/LB.png" Stretch="None"/>
+
+    <!-- === ПРАВАЯ ВЕРТИКАЛЬНАЯ ЧАСТЬ === -->
+    <Image Grid.Row="1" Grid.Column="4" Source="images/RT.png" Stretch="None"/>
+    
+    <!-- R - повторяется по вертикали -->
+    <Border Grid.Row="2" Grid.Column="4">
+        <Border.Background>
+            <ImageBrush ImageSource="images/R.png" 
+                       TileMode="Tile" 
+                       Viewport="0,0,13,19" 
+                       ViewportUnits="Absolute"
+                       Stretch="None"/>
+        </Border.Background>
+    </Border>
+    
+    <Image Grid.Row="3" Grid.Column="4" Source="images/RB.png" Stretch="None"/>
+
+    <!-- === НИЖНЯЯ ЧАСТЬ (ряд 4) === -->
+    <Image Grid.Row="4" Grid.Column="0" Source="images/BL.png" Stretch="None"/>
+    
+    <!-- BLB - повторяется по горизонтали -->
+    <Border Grid.Row="4" Grid.Column="1">
+        <Border.Background>
+            <ImageBrush ImageSource="images/BLB.png" 
+                       TileMode="Tile" 
+                       Viewport="0,0,51,14" 
+                       ViewportUnits="Absolute"
+                       Stretch="None"/>
+        </Border.Background>
+    </Border>
+    
+    <Image Grid.Row="4" Grid.Column="2" Source="images/B.png" Stretch="None"/>
+    
+    <!-- BRB - повторяется по горизонтали -->
+    <Border Grid.Row="4" Grid.Column="3">
+        <Border.Background>
+            <ImageBrush ImageSource="images/BRB.png" 
+                       TileMode="Tile" 
+                       Viewport="0,0,46,14" 
+                       ViewportUnits="Absolute"
+                       Stretch="None"/>
+        </Border.Background>
+    </Border>
+    
+    <Image Grid.Row="4" Grid.Column="4" Source="images/BR.png" Stretch="None"/>
+
+    <!-- === ЦЕНТРАЛЬНАЯ ЧАСТЬ (повторяется по обеим осям) === -->
+    <Border Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Grid.ColumnSpan="3">
+        <Border.Background>
+            <ImageBrush ImageSource="images/C.png" 
+                       TileMode="Tile" 
+                       Viewport="0,0,148,218" 
+                       ViewportUnits="Absolute"
+                       Stretch="None"/>
+        </Border.Background>
+    </Border>
+
+    <!-- === КОНТЕНТ === -->    
+    <ContentPresenter Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Grid.ColumnSpan="3" Margin="5"/>
+</Grid>
+           
+                     <Grid>
                 <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -467,11 +586,12 @@
                                 <Style TargetType="{x:Type Grid}">
                                 <Setter Property="Visibility" Value="Hidden"/>
                                 <Style.Triggers>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=IsMouseOver}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <DataTrigger Binding="{Binding ElementName=MainFrame, Path=Opacity}" Value="1.0">
+                                                <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
+                                        
                                         <DataTrigger Binding="{Binding IsContentCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
+                                                <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                 </Style.Triggers>
                                 </Style>
@@ -487,7 +607,7 @@
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top">
                                 <Button x:Name="ToggleBackgroundButton"
-                                        Width="30"
+                                        Width="20"
                                         Height="30"
                                         Background="Transparent"
                                         BorderThickness="0"
@@ -495,15 +615,15 @@
                                         Foreground="White"
                                         FontSize="16"
                                         Click="ToggleBackgroundButton_Click"
-                                        Margin="0"
+                                        Margin="12,5,0,0"
                                         FocusVisualStyle="{x:Null}">
-                                        <Path Data="M11 1C11 0.447715 11.4477 0 12 0C12.5523 0 13 0.447715 13 1V3C13 3.55228 12.5523 4 12 4C11.4477 4 11 3.55228 11 3V1Z M18 12C18 15.3137 15.3137 18 12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12ZM8.06167 12C8.06167 14.1751 9.82492 15.9383 12 15.9383C14.1751 15.9383 15.9383 14.1751 15.9383 12C15.9383 9.82492 14.1751 8.06167 12 8.06167C9.82492 8.06167 8.06167 9.82492 8.06167 12Z M20.4853 3.51472C20.0947 3.12419 19.4616 3.12419 19.0711 3.51472L17.6568 4.92893C17.2663 5.31946 17.2663 5.95262 17.6568 6.34315C18.0474 6.73367 18.6805 6.73367 19.0711 6.34315L20.4853 4.92893C20.8758 4.53841 20.8758 3.90524 20.4853 3.51472Z M1 13C0.447715 13 0 12.5523 0 12C0 11.4477 0.447715 11 1 11H3C3.55228 11 4 11.4477 4 12C4 12.5523 3.55228 13 3 13H1Z M3.51472 3.51472C3.1242 3.90524 3.1242 4.53841 3.51472 4.92893L4.92894 6.34315C5.31946 6.73367 5.95263 6.73367 6.34315 6.34315C6.73368 5.95262 6.73368 5.31946 6.34315 4.92893L4.92894 3.51472C4.53841 3.12419 3.90525 3.12419 3.51472 3.51472Z M11 21C11 20.4477 11.4477 20 12 20C12.5523 20 13 20.4477 13 21V23C13 23.5523 12.5523 24 12 24C11.4477 24 11 23.5523 11 23V21Z M6.34315 17.6569C5.95263 17.2663 5.31946 17.2663 4.92894 17.6569L3.51473 19.0711C3.1242 19.4616 3.1242 20.0948 3.51473 20.4853C3.90525 20.8758 4.53842 20.8758 4.92894 20.4853L6.34315 19.0711C6.73368 18.6805 6.73368 18.0474 6.34315 17.6569Z M21 13C20.4477 13 20 12.5523 20 12C20 11.4477 20.4477 11 21 11H23C23.5523 11 24 11.4477 24 12C24 12.5523 23.5523 13 23 13H21Z M17.6568 17.6569C17.2663 18.0474 17.2663 18.6805 17.6568 19.0711L19.0711 20.4853C19.4616 20.8758 20.0947 20.8758 20.4853 20.4853C20.8758 20.0948 20.8758 19.4616 20.4853 19.0711L19.0711 17.6569C18.6805 17.2663 18.0474 17.2663 17.6568 17.6569Z"
-                                                Stretch="Uniform"
-                                                Fill="White"
-                                                Width="18"
-                                                Height="18"
+                                        <Image x:Name="BackgroundToggleButtonImage"
+                                                Source="images/show-background.png"
+                                                Width="15"
+                                                Height="12"
                                                 VerticalAlignment="Center"
-                                                HorizontalAlignment="Center"/>
+                                                HorizontalAlignment="Center"
+                                                />
                                 </Button>
                         </StackPanel>
 
@@ -512,7 +632,7 @@
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Top">
                                 <Button x:Name="LogoutButton"
-                                        Width="30"
+                                        Width="20"
                                         Height="30"
                                         Background="Transparent"
                                         BorderThickness="0"
@@ -521,19 +641,17 @@
                                         FontSize="16"
                                         FontWeight="Normal"
                                         Click="LogoutButton_Click"
-                                        Margin="5,0,0,0"
+                                        Margin="5,5,0,0"
                                         Visibility="{Binding ElementName=TablesPanel, Path=Visibility}">
-                                        <Path Data="M14,7.63636L14,4.5C14,4.22386 13.7761,4 13.5,4L4.5,4C4.22386,4 4,4.22386 4,4.5L4,19.5C4,19.7761 4.22386,20 4.5,20L13.5,20C13.7761,20 14,19.7761 14,19.5L14,16.3636 M10,12L21,12 M21,12L18.0004,8.5 M21,12L18,15.5"
-                                                Stretch="Uniform"
-                                                Stroke="White"
-                                                StrokeThickness="2"
-                                                Width="15"
-                                                Height="15"
+                                        <Image x:Name="Logout"
+                                                Source="images/exit.png"
+                                                Width="14"
+                                                Height="13"
                                                 VerticalAlignment="Center"
                                                 HorizontalAlignment="Center"/>
                                 </Button>
                                 <Button x:Name="BackButton"
-                                        Width="30"
+                                        Width="20"
                                         Height="30"
                                         Background="Transparent"
                                         BorderThickness="0"
@@ -542,20 +660,19 @@
                                         Foreground="White"
                                         FontWeight="Bold"
                                         Click="BackButton_Click"
-                                        Margin="0,0,0,0"
+                                        Margin="0,5,0,0"
                                         Visibility="{Binding ElementName=TablesScrollViewer, Path=Visibility}">
-                                <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
-                                        Stretch="Uniform"
-                                        Stroke="White"
-                                        StrokeThickness="2"
-                                        Width="15"
-                                        Height="15"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"/>
+                                <Image x:Name="BackButtonImage"
+                                                Source="images/back.png"
+                                                Width="15"
+                                                Height="10"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                />
                                 </Button>
 
                                 <Button x:Name="BackFromEditButton"
-                                        Width="30"
+                                        Width="20"
                                         Height="30"
                                         Background="Transparent"
                                         BorderThickness="0"
@@ -564,40 +681,36 @@
                                         Foreground="White"
                                         FontWeight="Bold"
                                         Click="BackFromEditButton_Click"
-                                        Margin="0,0,0,0"
+                                        Margin="0,5,0,0"
                                         Visibility="{Binding ElementName=EditCastleScroll, Path=Visibility}">
-                                <Path Data="M11 6L5 12M5 12L11 18M5 12H19"
-                                        Stretch="Uniform"
-                                        Stroke="White"
-                                        StrokeThickness="2"
-                                        Width="15"
-                                        Height="15"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"/>
+                                <Image x:Name="BackFromEditButtonImage"
+                                                Source="images/back.png"
+                                                Width="15"
+                                                Height="10"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                />
                                 </Button>
                                 
                                 <Button x:Name="ToggleCollapseButton"
-                                        Width="30"
+                                        Width="20"
                                         Height="30"
                                         Background="Transparent"
                                         BorderThickness="0"
+                                        Margin="0,4,0,0"
                                         Click="ToggleCollapseButton_Click">
-                                <Path Fill="White" Stretch="Uniform" Width="12" Height="12">
-                                        <Path.Style>
-                                        <Style TargetType="Path">
-                                                <Setter Property="Data" Value="M 0 0 L 6 6 L 12 0 Z"/>
-                                                <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsContentCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                        <Setter Property="Data" Value="M 0 6 L 6 0 L 12 6 Z"/>
-                                                </DataTrigger>
-                                                </Style.Triggers>
-                                        </Style>
-                                        </Path.Style>
-                                </Path>
+                                        <Image x:Name="ToggleCollapseButtonImage"
+                                                Source="images/reveal.png"
+                                                Width="13"
+                                                Height="13"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                />
+                                                
                                 </Button>
                                 
                                 <Button x:Name="CloseButton"
-                                        Width="30"
+                                        Width="20"
                                         FontSize="16"
                                         Height="30"
                                         Background="Transparent"
@@ -605,14 +718,14 @@
                                         BorderBrush="Transparent"
                                         Foreground="White"
                                         Click="CloseButton_Click"
-                                        Margin="0">
-                                <Path Data="M20.7457 3.32851C20.3552 2.93798 19.722 2.93798 19.3315 3.32851L12.0371 10.6229L4.74275 3.32851C4.35223 2.93798 3.71906 2.93798 3.32854 3.32851C2.93801 3.71903 2.93801 4.3522 3.32854 4.74272L10.6229 12.0371L3.32856 19.3314C2.93803 19.722 2.93803 20.3551 3.32856 20.7457C3.71908 21.1362 4.35225 21.1362 4.74277 20.7457L12.0371 13.4513L19.3315 20.7457C19.722 21.1362 20.3552 21.1362 20.7457 20.7457C21.1362 20.3551 21.1362 19.722 20.7457 19.3315L13.4513 12.0371L20.7457 4.74272C21.1362 4.3522 21.1362 3.71903 20.7457 3.32851Z"
-                                        Stretch="Uniform"
-                                        Fill="White"
-                                        Width="14"
-                                        Height="14"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"/>
+                                        Margin="0,4,10,0">
+                                <Image x:Name="CloseButtonImage"
+                                                Source="images/close.png"
+                                                Width="14"
+                                                Height="14"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                RenderOptions.BitmapScalingMode="HighQuality"/>
                                 </Button>
                         </StackPanel>
                         </Grid>
@@ -1023,7 +1136,7 @@
                                 Grid.Row="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Center"
-                                Margin="0,8,0,0">
+                                Margin="0,4,0,8">
                                 <StackPanel.Style>
                                         <Style TargetType="{x:Type StackPanel}">
                                         <Setter Property="Visibility"
@@ -1033,30 +1146,31 @@
                                                 <MultiDataTrigger.Conditions>
                                                         <Condition Binding="{Binding ElementName=TablesScrollViewer, Path=Visibility}"
                                                                 Value="Visible" />
-                                                        <Condition Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=IsMouseOver}"
-                                                                Value="True" />
+                                                        <Condition Binding="{Binding ElementName=MainFrame, Path=Opacity}"
+                                                                Value="1.0" />
                                                 </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility"
                                                         Value="Visible" />
                                                 </MultiDataTrigger>
                                         </Style.Triggers>
                                         </Style>
-                                </StackPanel.Style>
+                                        </StackPanel.Style>
 
                                 <Button Margin="3,0,6,0"
                                         Click="SelectAllLocks_Click"
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Width="20"
-                                        Height="20"
+                                        Width="32"
+                                        Height="24"
                                         VerticalContentAlignment="Center"
                                         HorizontalContentAlignment="Center">
-                                        <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
-                                                Fill="White"
-                                                Stretch="Uniform"
-                                                Width="14"
-                                                Height="14" />
+                                        <Image x:Name="CancelCastles"
+                                                Source="images/cancel.png"
+                                                Width="22"
+                                                Height="14"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"/>
                                 </Button>
 
                                 <Button Content="15"
@@ -1155,15 +1269,16 @@
                                         Background="Transparent"
                                         BorderThickness="0"
                                         BorderBrush="Transparent"
-                                        Width="20"
-                                        Height="20"
+                                        Width="32"
+                                        Height="24"
                                         VerticalContentAlignment="Center"
                                         HorizontalContentAlignment="Center">
-                                                <Path Data="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
-                                                Fill="White"
-                                                Stretch="Uniform"
-                                                Width="14"
-                                                Height="14" />
+                                                <Image x:Name="CheckCastles"
+                                                Source="images/check.png"
+                                                Width="24"
+                                                Height="16"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"/>
                                 </Button>
                         </StackPanel>
 
@@ -1308,6 +1423,5 @@
                         </ScrollViewer>
                 </Grid>
         </Grid>
-
         </Grid>
 </Window>
