@@ -28,350 +28,372 @@
         </WindowChrome.WindowChrome>
         <Window.Resources>
                 <local:OpacityToVisibilityConverter x:Key="OpacityToVisibilityConverter"/>
-            
+          
         <Style x:Key="BaseTextBoxStyle" TargetType="TextBox">
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="FontSize" Value="14"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Padding" Value="5,2,5,2"/>
-                    <Setter Property="Template">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Padding" Value="5,2,5,2"/>
+                <Setter Property="Template">
                         <Setter.Value>
-                            <ControlTemplate TargetType="TextBox">
+                        <ControlTemplate TargetType="TextBox">
                                 <Grid SnapsToDevicePixels="True">
-                                        <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="3"/>  
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="3"/>  
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                                <RowDefinition Height="3"/>   
-                                                <RowDefinition Height="*"/>
-                                                <RowDefinition Height="3"/>   
-                                        </Grid.RowDefinitions>
-
-
-                                    <Image Grid.Row="0" Grid.Column="0" Source="images/input-TL.png" Stretch="None"/>
-                                    <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
-                                    
-                                    <Border Grid.Row="1" Grid.Column="1" Margin="0">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-C.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,10,10" Stretch="None"/>
-                                        </Border.Background>
-                                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Margin="2,0"/>
-                                    </Border>
-                                    <Border Grid.Row="0" Grid.Column="1">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-T.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,10,3" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                        <Border Grid.Row="1" Grid.Column="0">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-L.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,3,10" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                        <Border Grid.Row="1" Grid.Column="2">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-R.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,3,10" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                        <Border Grid.Row="2" Grid.Column="1">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,10,3" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                    <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
-                                    <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
-
-                                        <Border x:Name="FocusGlow"
-                                        CornerRadius="5"
-                                        Opacity="0">
-                                <Border.Effect>
-                                        <DropShadowEffect Color="#FFFF00" 
-                                                        ShadowDepth="0" 
-                                                        BlurRadius="10" 
-                                                        RenderingBias="Quality"/>
-                                </Border.Effect>
-                                </Border>
-                                
-                                </Grid>
-                                                                        
-                                <ControlTemplate.Triggers>
-                                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                        <Setter TargetName="FocusGlow" Property="Opacity" Value="1"/>
-                                        </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-                <Style x:Key="PasswordBox" TargetType="PasswordBox">
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="FontSize" Value="14"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Padding" Value="5,2,5,2"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="PasswordBox">
-                                <Grid SnapsToDevicePixels="True">
-                                        <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="3"/>  
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="3"/>  
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                                <RowDefinition Height="3"/>   
-                                                <RowDefinition Height="*"/>
-                                                <RowDefinition Height="3"/>   
-                                        </Grid.RowDefinitions>
-
-                                    <Image Grid.Row="0" Grid.Column="0" Source="images/input-TL.png" Stretch="None"/>
-                                    <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
-                                    
-                                    <Border Grid.Row="1" Grid.Column="1" Margin="0">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-C.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,10,10" Stretch="None"/>
-                                        </Border.Background>
-                                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Margin="2,0"/>
-                                    </Border>
-                                    <Border Grid.Row="0" Grid.Column="1">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-T.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,10,3" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                        <Border Grid.Row="1" Grid.Column="0">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-L.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,3,10" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                        <Border Grid.Row="1" Grid.Column="2">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-R.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,3,10" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                        <Border Grid.Row="2" Grid.Column="1">
-                                        <Border.Background>
-                                                <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" 
-                                                        Viewport="0,0,10,3" Stretch="None"/> </Border.Background>
-                                        </Border>
-
-                                    <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
-                                    <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
-                                </Grid>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-<Style x:Key="BaseComboBoxItemStyle" TargetType="ComboBoxItem">
-    <Setter Property="Foreground" Value="White"/>
-    <Setter Property="Background" Value="Transparent"/>
-    <!-- Устанавливаем отступы, чтобы контент элемента был хорошо виден -->
-    <Setter Property="Padding" Value="10,4,10,4"/>
-    <Setter Property="Template">
-        <Setter.Value>
-            <ControlTemplate TargetType="ComboBoxItem">
-                <Border x:Name="Border"
-                        Background="{TemplateBinding Background}"
-                        SnapsToDevicePixels="True">
-                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
-                                      Margin="{TemplateBinding Padding}"/>
-                </Border>
-                <ControlTemplate.Triggers>
-                    <!-- СОСТОЯНИЕ: Наведение мыши (Hover) -->
-                    <!-- Применяем темно-серый или синий оттенок для подсветки, чтобы он контрастировал с input-C -->
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="#2A3C5B"/>
-                    </Trigger>
-                    <!-- СОСТОЯНИЕ: Выбранный элемент (Selected) -->
-                    <!-- Более насыщенный цвет для выбранного элемента -->
-                    <Trigger Property="IsSelected" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="#3F597A"/>
-                    </Trigger>
-                    <!-- СОСТОЯНИЕ: Отключенный элемент (Disabled) -->
-                    <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="#777777"/>
-                    </Trigger>
-                </ControlTemplate.Triggers>
-            </ControlTemplate>
-        </Setter.Value>
-    </Setter>
-</Style>
-
-<Style x:Key="BaseComboBoxStyle" TargetType="ComboBox">
-    <Setter Property="Foreground" Value="White"/>
-    <Setter Property="FontSize" Value="14"/>
-    <Setter Property="Height" Value="30"/>
-    <Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="Background" Value="Transparent"/>
-    <!-- Применяем наш новый стиль для контейнеров элементов -->
-    <Setter Property="ItemContainerStyle" Value="{StaticResource BaseComboBoxItemStyle}"/>
-    <Setter Property="Template">
-        <Setter.Value>
-            <ControlTemplate TargetType="ComboBox">
-                <Grid>
-                    <!-- ToggleButton содержит всю 9-patch рамку ComboBox (верхняя часть) -->
-                    <ToggleButton x:Name="ToggleButton" 
-                                    Grid.Column="2" 
-                                    Focusable="false"
-                                    IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                    ClickMode="Press">
-                        <ToggleButton.Template>
-                            <ControlTemplate TargetType="ToggleButton">
-                                <Grid SnapsToDevicePixels="True">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="3"/> 	<!-- Левый угол (3px) -->
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="3"/> 	<!-- Правый угол (3px) -->
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="3"/> 	<!-- Верхний угол (3px) -->
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="3"/> 	<!-- Нижний угол (3px) -->
-                                    </Grid.RowDefinitions>
-
-                                    <!-- 1. Top-Left Corner -->
-                                    <Image Grid.Row="0" Grid.Column="0" Source="images/input-TL.png" Stretch="None"/>
-                                    
-                                    <!-- 2. Top Border: Viewport Height 3px -->
-                                    <Border Grid.Row="0" Grid.Column="1">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="images/input-T.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
-                                        </Border.Background>
-                                    </Border>
-                                    
-                                    <!-- 3. Top-Right Corner -->
-                                    <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
-
-                                    <!-- 4. Left Border: Viewport Width 3px -->
-                                    <Border Grid.Row="1" Grid.Column="0">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="images/input-L.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
-                                        </Border.Background>
-                                    </Border>
-                                    
-                                    <!-- 5. Center Background (input-C) -->
-                                    <Border Grid.Row="1" Grid.Column="1">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="images/input-C.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,10" Stretch="None"/>
-                                        </Border.Background>
-                                    </Border>
-                                    
-                                    <!-- 6. Right Border: Viewport Width 3px -->
-                                    <Border Grid.Row="1" Grid.Column="2">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="images/input-R.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
-                                        </Border.Background>
-                                    </Border>
-
-                                    <!-- 7. Bottom-Left Corner -->
-                                    <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
-                                    
-                                    <!-- 8. Bottom Border: Viewport Height 3px -->
-                                    <Border Grid.Row="2" Grid.Column="1">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
-                                        </Border.Background>
-                                    </Border>
-                                    
-                                    <!-- 9. Bottom-Right Corner -->
-                                    <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
-
-                                    <!-- Arrow path: positioned correctly in the central cell (1,1) -->
-                                    <Path Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
-                                            Fill="White" Data="M 0 0 L 4 4 L 8 0 Z"/>
-                                </Grid>
-                            </ControlTemplate>
-                        </ToggleButton.Template>
-                    </ToggleButton>
-
-                    <!-- ContentPresenter (Selected Item Text) -->
-                    <ContentPresenter Name="ContentSite"
-                                        IsHitTestVisible="False"
-                                        Content="{TemplateBinding SelectionBoxItem}"
-                                        ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                        ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
-                                        Margin="10,0,25,0"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Left" />
-
-                    <!-- Popup for the drop-down list -->
-                    <Popup x:Name="Popup" Placement="Bottom" IsOpen="{Binding IsChecked, ElementName=ToggleButton}" 
-                            AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
-                        <!-- Здесь мы заменяем стандартный DropDownBorder на нашу 9-patch структуру -->
-                        <Grid Name="DropDown" SnapsToDevicePixels="True" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                            <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="3"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="3"/>
+                                        <ColumnDefinition Width="3"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="3"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="3"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="3"/>
+                                        <RowDefinition Height="3"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="3"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- Corners -->
                                 <Image Grid.Row="0" Grid.Column="0" Source="images/input-TL.png" Stretch="None"/>
-                                <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
-                                <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
-                                <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
-
-                                <!-- Borders (Viewport 3px thick) -->
                                 <Border Grid.Row="0" Grid.Column="1">
-                                    <Border.Background>
+                                        <Border.Background>
                                         <ImageBrush ImageSource="images/input-T.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
-                                    </Border.Background>
+                                        </Border.Background>
                                 </Border>
+                                <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
+
                                 <Border Grid.Row="1" Grid.Column="0">
-                                    <Border.Background>
+                                        <Border.Background>
                                         <ImageBrush ImageSource="images/input-L.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
-                                    </Border.Background>
+                                        </Border.Background>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="1" Margin="0">
+                                        <Border.Background>
+                                        <ImageBrush ImageSource="images/input-C.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,10" Stretch="None"/>
+                                        </Border.Background>
+                                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Margin="2,0"/>
                                 </Border>
                                 <Border Grid.Row="1" Grid.Column="2">
-                                    <Border.Background>
+                                        <Border.Background>
                                         <ImageBrush ImageSource="images/input-R.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
-                                    </Border.Background>
-                                </Border>
-                                <Border Grid.Row="2" Grid.Column="1">
-                                    <Border.Background>
-                                        <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
-                                    </Border.Background>
+                                        </Border.Background>
                                 </Border>
 
-                                <!-- Center Content (ItemsPresenter inside ScrollViewer) -->
-                                <Border Grid.Row="1" Grid.Column="1">
-                                    <!-- Центр заполняется input-C -->
-                                    <Border.Background>
-                                        <ImageBrush ImageSource="images/input-C-dark.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,10" Stretch="None"/>
-                                    </Border.Background>
-                                    <!-- ItemsPresenter с отступами для контента внутри рамки -->
-                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True"> 
-                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
-                                    </ScrollViewer>
+                                <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
+                                <Border Grid.Row="2" Grid.Column="1">
+                                        <Border.Background>
+                                        <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
+                                        </Border.Background>
                                 </Border>
-                            </Grid>
+                                <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
+
+                                <Border x:Name="FocusGlow" 
+                                        CornerRadius="0" 
+                                        Opacity="0"
+                                        Grid.RowSpan="3" 
+                                        Grid.ColumnSpan="3"
+                                        IsHitTestVisible="False">
+                                        <Border.Effect>
+                                        <DropShadowEffect Color="#FFFF00" ShadowDepth="0" BlurRadius="15" RenderingBias="Quality"/>
+                                        </Border.Effect>
+                                        <Border BorderBrush="#FFFF00" BorderThickness="1" CornerRadius="0"/>
+                                </Border>
+
+                                </Grid>
+                                
+                                <ControlTemplate.Triggers>
+                                <Trigger Property="local:FocusHelper.IsOverlayFocused" Value="True">
+                                        <Setter TargetName="FocusGlow" Property="Opacity" Value="1"/>
+                                </Trigger>
+                                </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                        </Setter.Value>
+                </Setter>
+                </Style>
+        
+        <Style x:Key="PasswordBox" TargetType="PasswordBox">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Padding" Value="5,2,5,2"/>
+                <Setter Property="Template">
+                        <Setter.Value>
+                        <ControlTemplate TargetType="PasswordBox">
+                                <Grid SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="3"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="3"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                        <RowDefinition Height="3"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="3"/>
+                                </Grid.RowDefinitions>
+
+                                <Image Grid.Row="0" Grid.Column="0" Source="images/input-TL.png" Stretch="None"/>
+                                <Border Grid.Row="0" Grid.Column="1">
+                                        <Border.Background>
+                                        <ImageBrush ImageSource="images/input-T.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
+                                        </Border.Background>
+                                </Border>
+                                <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
+
+                                <Border Grid.Row="1" Grid.Column="0">
+                                        <Border.Background>
+                                        <ImageBrush ImageSource="images/input-L.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
+                                        </Border.Background>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="1" Margin="0">
+                                        <Border.Background>
+                                        <ImageBrush ImageSource="images/input-C.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,10" Stretch="None"/>
+                                        </Border.Background>
+                                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Margin="2,0"/>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="2">
+                                        <Border.Background>
+                                        <ImageBrush ImageSource="images/input-R.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
+                                        </Border.Background>
+                                </Border>
+
+                                <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
+                                <Border Grid.Row="2" Grid.Column="1">
+                                        <Border.Background>
+                                        <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
+                                        </Border.Background>
+                                </Border>
+                                <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
+
+                                <Border x:Name="FocusGlow" 
+                                        CornerRadius="0" 
+                                        Opacity="0"
+                                        Grid.RowSpan="3" 
+                                        Grid.ColumnSpan="3"
+                                        IsHitTestVisible="False">
+                                        <Border.Effect>
+                                        <DropShadowEffect Color="#FFFF00" ShadowDepth="0" BlurRadius="15" RenderingBias="Quality"/>
+                                        </Border.Effect>
+                                        <Border BorderBrush="#FFFF00" BorderThickness="1" CornerRadius="0"/>
+                                </Border>
+                                </Grid>
+                                
+                                <ControlTemplate.Triggers>
+                                <Trigger Property="local:FocusHelper.IsOverlayFocused" Value="True">
+                                        <Setter TargetName="FocusGlow" Property="Opacity" Value="1"/>
+                                </Trigger>
+                                </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                        </Setter.Value>
+                </Setter>
+                </Style>
+
+        <Style x:Key="BaseComboBoxItemStyle" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <!-- Устанавливаем отступы, чтобы контент элемента был хорошо виден -->
+        <Setter Property="Padding" Value="10,4,10,4"/>
+        <Setter Property="Template">
+                <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                        SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                        Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                        <!-- СОСТОЯНИЕ: Наведение мыши (Hover) -->
+                        <!-- Применяем темно-серый или синий оттенок для подсветки, чтобы он контрастировал с input-C -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#2A3C5B"/>
+                        </Trigger>
+                        <!-- СОСТОЯНИЕ: Выбранный элемент (Selected) -->
+                        <!-- Более насыщенный цвет для выбранного элемента -->
+                        <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#3F597A"/>
+                        </Trigger>
+                        <!-- СОСТОЯНИЕ: Отключенный элемент (Disabled) -->
+                        <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#777777"/>
+                        </Trigger>
+                        </ControlTemplate.Triggers>
+                </ControlTemplate>
+                </Setter.Value>
+        </Setter>
+        </Style>
+
+        <Style x:Key="BaseComboBoxStyle" TargetType="ComboBox">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <!-- Применяем наш новый стиль для контейнеров элементов -->
+        <Setter Property="ItemContainerStyle" Value="{StaticResource BaseComboBoxItemStyle}"/>
+        <Setter Property="Template">
+                <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                        <!-- ToggleButton содержит всю 9-patch рамку ComboBox (верхняя часть) -->
+                        <ToggleButton x:Name="ToggleButton" 
+                                        Grid.Column="2" 
+                                        Focusable="false"
+                                        IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                        ClickMode="Press">
+                                <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                        <Grid SnapsToDevicePixels="True">
+                                        <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="3"/> 	<!-- Левый угол (3px) -->
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="3"/> 	<!-- Правый угол (3px) -->
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                                <RowDefinition Height="3"/> 	<!-- Верхний угол (3px) -->
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="3"/> 	<!-- Нижний угол (3px) -->
+                                        </Grid.RowDefinitions>
+
+                                        <!-- 1. Top-Left Corner -->
+                                        <Image Grid.Row="0" Grid.Column="0" Source="images/input-TL.png" Stretch="None"/>
+                                        
+                                        <!-- 2. Top Border: Viewport Height 3px -->
+                                        <Border Grid.Row="0" Grid.Column="1">
+                                                <Border.Background>
+                                                <ImageBrush ImageSource="images/input-T.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
+                                                </Border.Background>
+                                        </Border>
+                                        
+                                        <!-- 3. Top-Right Corner -->
+                                        <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
+
+                                        <!-- 4. Left Border: Viewport Width 3px -->
+                                        <Border Grid.Row="1" Grid.Column="0">
+                                                <Border.Background>
+                                                <ImageBrush ImageSource="images/input-L.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
+                                                </Border.Background>
+                                        </Border>
+                                        
+                                        <!-- 5. Center Background (input-C) -->
+                                        <Border Grid.Row="1" Grid.Column="1">
+                                                <Border.Background>
+                                                <ImageBrush ImageSource="images/input-C.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,10" Stretch="None"/>
+                                                </Border.Background>
+                                        </Border>
+                                        
+                                        <!-- 6. Right Border: Viewport Width 3px -->
+                                        <Border Grid.Row="1" Grid.Column="2">
+                                                <Border.Background>
+                                                <ImageBrush ImageSource="images/input-R.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
+                                                </Border.Background>
+                                        </Border>
+
+                                        <!-- 7. Bottom-Left Corner -->
+                                        <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
+                                        
+                                        <!-- 8. Bottom Border: Viewport Height 3px -->
+                                        <Border Grid.Row="2" Grid.Column="1">
+                                                <Border.Background>
+                                                <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
+                                                </Border.Background>
+                                        </Border>
+                                        
+                                        <!-- 9. Bottom-Right Corner -->
+                                        <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
+
+                                        <!-- Arrow path: positioned correctly in the central cell (1,1) -->
+                                        <Path Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                Fill="White" Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                                
+                                                <Border x:Name="FocusGlow" CornerRadius="0" Opacity="0" Grid.RowSpan="3" Grid.ColumnSpan="3">
+                                                <Border.Effect>
+                                                        <DropShadowEffect Color="#FFFF00" ShadowDepth="0" BlurRadius="15" RenderingBias="Quality"/>
+                                                </Border.Effect>
+                                                <Border BorderBrush="#FFFF00" BorderThickness="1" CornerRadius="0"/>
+                                                </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Path=(local:FocusHelper.IsOverlayFocused), RelativeSource={RelativeSource AncestorType=ComboBox}}" Value="True">
+                                                <Setter TargetName="FocusGlow" Property="Opacity" Value="1"/>
+                                        </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                                </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <!-- ContentPresenter (Selected Item Text) -->
+                        <ContentPresenter Name="ContentSite"
+                                                IsHitTestVisible="False"
+                                                Content="{TemplateBinding SelectionBoxItem}"
+                                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                Margin="10,0,25,0"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Left" />
+
+                        <!-- Popup for the drop-down list -->
+                        <Popup x:Name="Popup" Placement="Bottom" IsOpen="{Binding IsChecked, ElementName=ToggleButton}" 
+                                AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                <!-- Здесь мы заменяем стандартный DropDownBorder на нашу 9-patch структуру -->
+                                <Grid Name="DropDown" SnapsToDevicePixels="True" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                <Grid>
+                                        <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="3"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="3"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                        <RowDefinition Height="3"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="3"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Corners -->
+                                        <Image Grid.Row="0" Grid.Column="0" Source="images/input-TL.png" Stretch="None"/>
+                                        <Image Grid.Row="0" Grid.Column="2" Source="images/input-TR.png" Stretch="None"/>
+                                        <Image Grid.Row="2" Grid.Column="2" Source="images/input-BR.png" Stretch="None"/>
+                                        <Image Grid.Row="2" Grid.Column="0" Source="images/input-BL.png" Stretch="None"/>
+
+                                        <!-- Borders (Viewport 3px thick) -->
+                                        <Border Grid.Row="0" Grid.Column="1">
+                                        <Border.Background>
+                                                <ImageBrush ImageSource="images/input-T.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
+                                        </Border.Background>
+                                        </Border>
+                                        <Border Grid.Row="1" Grid.Column="0">
+                                        <Border.Background>
+                                                <ImageBrush ImageSource="images/input-L.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
+                                        </Border.Background>
+                                        </Border>
+                                        <Border Grid.Row="1" Grid.Column="2">
+                                        <Border.Background>
+                                                <ImageBrush ImageSource="images/input-R.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,3,10" Stretch="None"/>
+                                        </Border.Background>
+                                        </Border>
+                                        <Border Grid.Row="2" Grid.Column="1">
+                                        <Border.Background>
+                                                <ImageBrush ImageSource="images/input-B.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,3" Stretch="None"/>
+                                        </Border.Background>
+                                        </Border>
+
+                                        <!-- Center Content (ItemsPresenter inside ScrollViewer) -->
+                                        <Border Grid.Row="1" Grid.Column="1">
+                                        <!-- Центр заполняется input-C -->
+                                        <Border.Background>
+                                                <ImageBrush ImageSource="images/input-C-dark.png" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,10,10" Stretch="None"/>
+                                        </Border.Background>
+                                        <!-- ItemsPresenter с отступами для контента внутри рамки -->
+                                        <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True"> 
+                                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                        </ScrollViewer>
+                                        </Border>
+                                </Grid>
+                                </Grid>
+                        </Popup>
                         </Grid>
-                    </Popup>
-                </Grid>
-            </ControlTemplate>
-        </Setter.Value>
-    </Setter>
-</Style>
+                </ControlTemplate>
+                </Setter.Value>
+        </Setter>
+        </Style>
 
 
                 <Style TargetType="ComboBoxItem">
@@ -1023,7 +1045,8 @@
                                          Width="200"
                                          Margin="0,2,0,10"
                                          Foreground="White"
-                                         Background="#7a8ebf"/>
+                                         Background="#7a8ebf"
+                                         GotFocus="TextBox_GotFocus"/>
                                 <Label Content="Пароль"
                                        FontSize="14"
                                        HorizontalAlignment="Center"
@@ -1031,10 +1054,10 @@
                                        FontWeight="Bold"/>
                                 <PasswordBox x:Name="PasswordBox"
                                         Style="{StaticResource PasswordBox}"
-                                             FontSize="14"
-                                             Width="200"
-                                             Margin="0,2,0,10"
-                                             />
+                                        FontSize="14"
+                                        Width="200"
+                                        Margin="0,2,0,10"
+                                        GotFocus="TextBox_GotFocus"/>
                                 <Button x:Name="LoginButton"
                                         FontSize="14"
                                         Content="Войти"
@@ -1070,7 +1093,8 @@
                                          Foreground="White"
                                          Background="#7a8ebf"
                                          Width="200"
-                                         Margin="0,2,0,10"/>
+                                         Margin="0,2,0,10"
+                                         GotFocus="TextBox_GotFocus"/>
                                 <Button Content="Войти"
                                         FontSize="14"
                                         x:Name="TokenLoginButton"

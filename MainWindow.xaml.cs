@@ -642,6 +642,27 @@ namespace DollOverlay
         public string? authToken { get; set; }
     }
 
+    // Добавьте этот класс в файл MainWindow.xaml.cs (например, перед классом MainWindow)
+    public static class FocusHelper
+    {
+        public static readonly DependencyProperty IsOverlayFocusedProperty =
+            DependencyProperty.RegisterAttached(
+                "IsOverlayFocused",
+                typeof(bool),
+                typeof(FocusHelper),
+                new PropertyMetadata(false));
+
+        public static void SetIsOverlayFocused(UIElement element, bool value)
+        {
+            element.SetValue(IsOverlayFocusedProperty, value);
+        }
+
+        public static bool GetIsOverlayFocused(UIElement element)
+        {
+            return (bool)element.GetValue(IsOverlayFocusedProperty);
+        }
+    }
+
     //---------------------------------------------------------
 
     public partial class MainWindow : Window, INotifyPropertyChanged
@@ -649,6 +670,8 @@ namespace DollOverlay
         private string? _token;
         private string? _selectedTableId;
         private string _currentSortColumn = "DefaultSort";
+        private bool _isUserInitiatedDisconnect = false;
+        private readonly object _castlesLock = new object();
         private bool IsLocked { get; set; } = false;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
         private readonly HttpClient _httpClient = new HttpClient();
@@ -882,11 +905,10 @@ namespace DollOverlay
 
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
-            // Приводим отправителя события к типу TextBox
-            if (sender is TextBox textBox)
+            if (sender is Control control)
             {
-                // Стираем содержимое
-                textBox.SelectAll();
+                // Используем наш новый метод, чтобы обновить визуальный стиль
+                FocusAndSelect(control);
             }
         }
 
@@ -1565,8 +1587,17 @@ namespace DollOverlay
 
         private void FocusAndSelect(Control control)
         {
+            var allControls = GetActiveInputControls();
+            foreach (var c in allControls)
+            {
+                FocusHelper.SetIsOverlayFocused(c, false);
+            }
+
+            // 2. Устанавливаем "виртуальный фокус" на целевой элемент
+            FocusHelper.SetIsOverlayFocused(control, true);
+
+            // 3. Оставляем старую логику WPF (на всякий случай)
             control.Focus();
-            // Если это текстовое поле, выделяем весь текст принудительно
             if (control is TextBox textBox)
             {
                 textBox.SelectAll();
@@ -2157,18 +2188,36 @@ namespace DollOverlay
 
         private async void RefreshTimer_Tick(object? sender, EventArgs e)
         {
-            if (TablesScrollViewer.Visibility == Visibility.Visible)
+            // Если мы не видим таблицу, нет смысла обновлять таймеры
+            if (TablesScrollViewer.Visibility != Visibility.Visible) return;
+
+            try
             {
-                // Обновляем свойства для всех замков в оригинальной коллекции
-                foreach (var castle in originalCastles)
+                // 1. Создаем копию списка для итерации, чтобы избежать конфликтов 
+                // с обновлением данных из WebSocket (CollectionModified exception)
+                List<Castle> castlesSnapshot;
+                lock (_castlesLock) // Этот объект нужно объявить (см. ниже)
+                {
+                    if (originalCastles == null) return;
+                    castlesSnapshot = originalCastles.ToList();
+                }
+
+                // 2. Обновляем свойства (это вызывает пересчет WhiteTime внутри геттеров)
+                foreach (var castle in castlesSnapshot)
                 {
                     castle.NotifyPropertyChanged(nameof(castle.WhiteTime));
                     castle.NotifyPropertyChanged(nameof(castle.StatusText));
                     castle.NotifyPropertyChanged(nameof(castle.StatusColor));
+                    castle.NotifyPropertyChanged(nameof(castle.RedTime)); // Тоже обновляем, раз есть в UI
                 }
 
-                // После обновления свойств, повторно применяем фильтр и сортировку
+                // 3. Применяем сортировку
                 ApplyFilterAndSort();
+            }
+            catch (Exception ex)
+            {
+                // Логируем ошибку (или просто выводим в Debug), но НЕ роняем таймер
+                Debug.WriteLine($"Ошибка в таймере: {ex.Message}");
             }
         }
 
@@ -2368,7 +2417,10 @@ namespace DollOverlay
                         combinedCastles.Add(castle);
                     }
 
-                    originalCastles = combinedCastles;
+                    lock (_castlesLock)
+                    {
+                        originalCastles = combinedCastles;
+                    }
 
                     LoadButtonSettings();
                     UpdateButtonAppearance();
@@ -2682,33 +2734,36 @@ namespace DollOverlay
 
             Dispatcher.Invoke(() =>
             {
-                int castleId = update.data.castleData.id; // Получаем ID отсюда
-
-                var existingCastleInObservable = _castlesObservable.FirstOrDefault(c => c.id == castleId);
-                var existingCastleInOriginal = originalCastles.FirstOrDefault(c => c.id == castleId);
-
-                // Получаем данные из вложенного объекта
-                var castleData = update.data.castleData;
-
-                if (existingCastleInObservable != null)
+                lock (_castlesLock)
                 {
-                    existingCastleInObservable.fillingLvl = castleData.fillingLvl;
-                    existingCastleInObservable.fillingSpheretime = castleData.fillingSpheretime;
-                    existingCastleInObservable.commentary = castleData.commentary;
-                    existingCastleInObservable.ownerClan = castleData.ownerClan;
-                    existingCastleInObservable.fillingDatetime = castleData.fillingDatetime;
-                }
-                if (existingCastleInOriginal != null)
-                {
-                    existingCastleInOriginal.fillingLvl = castleData.fillingLvl;
-                    existingCastleInOriginal.fillingSpheretime = castleData.fillingSpheretime;
-                    existingCastleInOriginal.commentary = castleData.commentary;
-                    existingCastleInOriginal.ownerClan = castleData.ownerClan;
-                    existingCastleInObservable.OwnerClanName = _clans.FirstOrDefault(c => c.id == castleData.ownerClan)?.name ?? castleData.ownerClan;
-                    existingCastleInOriginal.fillingDatetime = castleData.fillingDatetime;
-                }
+                    int castleId = update.data.castleData.id; // Получаем ID отсюда
 
-                ApplyFilterAndSort();
+                    var existingCastleInObservable = _castlesObservable.FirstOrDefault(c => c.id == castleId);
+                    var existingCastleInOriginal = originalCastles.FirstOrDefault(c => c.id == castleId);
+
+                    // Получаем данные из вложенного объекта
+                    var castleData = update.data.castleData;
+
+                    if (existingCastleInObservable != null)
+                    {
+                        existingCastleInObservable.fillingLvl = castleData.fillingLvl;
+                        existingCastleInObservable.fillingSpheretime = castleData.fillingSpheretime;
+                        existingCastleInObservable.commentary = castleData.commentary;
+                        existingCastleInObservable.ownerClan = castleData.ownerClan;
+                        existingCastleInObservable.fillingDatetime = castleData.fillingDatetime;
+                    }
+                    if (existingCastleInOriginal != null)
+                    {
+                        existingCastleInOriginal.fillingLvl = castleData.fillingLvl;
+                        existingCastleInOriginal.fillingSpheretime = castleData.fillingSpheretime;
+                        existingCastleInOriginal.commentary = castleData.commentary;
+                        existingCastleInOriginal.ownerClan = castleData.ownerClan;
+                        existingCastleInObservable.OwnerClanName = _clans.FirstOrDefault(c => c.id == castleData.ownerClan)?.name ?? castleData.ownerClan;
+                        existingCastleInOriginal.fillingDatetime = castleData.fillingDatetime;
+                    }
+
+                    ApplyFilterAndSort();
+                }
             });
         }
 
@@ -2786,6 +2841,8 @@ namespace DollOverlay
         }
         private async Task DisconnectWebSocket()
         {
+            _isUserInitiatedDisconnect = true; // <-- Ставим флаг, что это мы сами отключили
+    
             if (_webSocket.State == WebSocketState.Open)
             {
                 _cts.Cancel();
@@ -2793,46 +2850,67 @@ namespace DollOverlay
                 {
                     await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Switching table", CancellationToken.None);
                 }
-                catch (Exception ex)
-                {
-                    // Игнорируем исключения при закрытии
-                }
-                finally
-                {
-                    _webSocket?.Dispose();
-                    _cts?.Dispose();
-                    _cts = new CancellationTokenSource();
-                }
+                catch { /* ignore */ }
             }
+            _webSocket?.Dispose();
         }
 
         private async Task ConnectAndJoinTableAsync(string tableId)
         {
-            if (_cts != null)
-            {
-                _cts.Cancel();
-                _cts.Dispose();
-            }
+            // Сбрасываем флаг, так как начинаем новое подключение
+            _isUserInitiatedDisconnect = false; 
+            
+            // Выносим логику подключения в отдельный метод, чтобы его можно было вызывать повторно
+            await ConnectToSocketLoop(tableId); 
+        }
 
-            _cts = new CancellationTokenSource();
-            _webSocket = new ClientWebSocket();
+        private async Task ConnectToSocketLoop(string tableId)
+        {
+            // Бесконечный цикл переподключения, пока пользователь не уйдет со страницы
+            while (!_isUserInitiatedDisconnect)
+            {
+                if (_cts != null)
+                {
+                    _cts.Cancel();
+                    _cts.Dispose();
+                }
+                _cts = new CancellationTokenSource();
 
-            try
-            {
-                await _webSocket.ConnectAsync(new Uri(WebSocketUrl), _cts.Token);
-                SendWebSocketAuthMessage();
-                await SendWebSocketJoinMessage(tableId);
-                SwitchToMainContent();
-                IsSavedLoading = false;
-                await ReceiveWebSocketMessagesAsync();
-            }
-            catch (OperationCanceledException)
-            {
-                IsSavedLoading = false;
-            }
-            catch (Exception ex)
-            {
-                IsSavedLoading = false;
+                try
+                {
+                    _webSocket = new ClientWebSocket();
+                    // Подключаемся
+                    await _webSocket.ConnectAsync(new Uri(WebSocketUrl), _cts.Token);
+                    
+                    // Отправляем Auth и Join
+                    await SendWebSocketAuthMessage();
+                    await SendWebSocketJoinMessage(tableId);
+
+                    // Если это первое успешное подключение - убираем лоадер и показываем контент
+                    IsSavedLoading = false;
+                    SwitchToMainContent();
+                    
+                    StatusTextBlock.Text = ""; // Очищаем ошибки если были
+
+                    // Слушаем сообщения (этот метод заблокирует выполнение, пока сокет жив)
+                    await ReceiveWebSocketMessagesAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Ошибка WS: {ex.Message}");
+                }
+                finally
+                {
+                    // Очистка ресурсов перед следующей попыткой
+                    try { _webSocket.Dispose(); } catch { }
+                }
+
+                // Если мы здесь, значит соединение разорвано или возникла ошибка.
+                if (_isUserInitiatedDisconnect) break; // Если юзер нажал "Назад", выходим.
+
+                // Иначе - пробуем подключиться снова через 3 секунды
+                Dispatcher.Invoke(() => StatusTextBlock.Text = "Связь потеряна. Реконнект...");
+                await Task.Delay(3000); 
             }
         }
 
@@ -2856,6 +2934,8 @@ namespace DollOverlay
         private async Task ReceiveWebSocketMessagesAsync()
         {
             var buffer = new byte[1024 * 4];
+            
+            // Цикл работает пока сокет открыт и не отменено
             while (_webSocket.State == WebSocketState.Open && !_cts.IsCancellationRequested)
             {
                 var stringBuilder = new StringBuilder();
@@ -2872,24 +2952,31 @@ namespace DollOverlay
                         }
                         else if (result.MessageType == WebSocketMessageType.Close)
                         {
+                            // Сервер закрыл соединение корректно
                             await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                            return; // Выходим из метода, сработает цикл в ConnectToSocketLoop
                         }
                     } while (!result.EndOfMessage);
 
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         var message = stringBuilder.ToString();
-                        var update = JsonSerializer.Deserialize<WebSocketDataUpdate>(message);
-                        UpdateDataGrid(update);
+                        // Десериализация может упасть, если JSON битый
+                        try 
+                        {
+                            var update = JsonSerializer.Deserialize<WebSocketDataUpdate>(message);
+                            UpdateDataGrid(update);
+                        }
+                        catch (JsonException) { /* Игнорируем битый пакет */ }
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    break;
+                    break; // Отмена токена
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-
+                    throw; // Пробрасываем ошибку наверх, чтобы сработал reconnect в ConnectToSocketLoop
                 }
             }
         }
