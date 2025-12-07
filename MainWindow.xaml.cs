@@ -24,7 +24,6 @@ using System.Runtime.InteropServices;
 using System.Windows.Media.Animation;
 using System.Diagnostics;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
@@ -669,6 +668,11 @@ namespace DollOverlay
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        [DllImport("user32.dll")]
+        public static extern short GetKeyState(int nVirtKey);
 
         // Константы для SetWindowPos
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
@@ -699,6 +703,7 @@ namespace DollOverlay
         static extern bool SetForegroundWindow(IntPtr hWnd);
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        private DispatcherTimer _windowDiscoveryTimer = new DispatcherTimer();
 
 
         private Storyboard? _loadingStoryboard;
@@ -706,6 +711,7 @@ namespace DollOverlay
         private bool _isSavedLoading;
         private double _expandedHeight; // Для хранения высоты до сворачивания
         private bool _isContentCollapsed;
+        private bool _isOverlayOnTop = false;
         public bool IsLoading
         {
             get => _isLoading;
@@ -804,45 +810,48 @@ namespace DollOverlay
         // Новая логика для таймера
         private void TopmostTimer_Tick(object sender, EventArgs e)
         {
-            // Пытаемся найти окно игры, если его хэндл еще не известен
-            if (_gameWindowHandle == IntPtr.Zero)
+            var gameWindows = FindAllGameWindows();
+    
+            if (gameWindows.Count == 0)
             {
-                _gameWindowHandle = FindGameWindow();
+                return;
             }
-
-            // Если окно игры не найдено (например, игра не запущена), выходим
-            if (_gameWindowHandle == IntPtr.Zero)
-            {
-                // Можно периодически пытаться найти его снова, если игра может быть запущена позже
-                _gameWindowHandle = FindGameWindow();
-                if (_gameWindowHandle == IntPtr.Zero) return;
-            }
-
-            // Получаем хэндл текущего активного окна в системе
+            
+            // Получаем хэндл текущего активного окна
             IntPtr activeWindowHandle = GetForegroundWindow();
-
-            // Сравниваем хэндл активного окна с хэндлом окна игры
-            if (activeWindowHandle == _gameWindowHandle)
+            
+            // Проверяем, является ли активное окно одним из окон игры
+            bool isAnyGameWindowActive = gameWindows.Contains(activeWindowHandle);
+            
+            if (isAnyGameWindowActive)
             {
-                // Если активно окно игры, делаем наш оверлей поверх него
-                IntPtr myWindowHandle = new WindowInteropHelper(this).Handle;
-                SetWindowPos(myWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+                // Убеждаемся, что оверлей всегда поверх
+                EnsureOverlayOnTop();
             }
+        }
+
+        private void EnsureOverlayOnTop()
+        {
+            if (_isOverlayOnTop) return;
+    
+            IntPtr myWindowHandle = new WindowInteropHelper(this).Handle;
+            
+            this.Topmost = true;
+            SetWindowPos(myWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            
+            _isOverlayOnTop = true;
+        }
+
+        private void ResetOverlayState()
+        {
+            _isOverlayOnTop = false;
         }
 
         // Новая вспомогательная функция для поиска окна игры
         private IntPtr FindGameWindow()
         {
-            // Ищем процесс по имени (самый надежный способ)
-            Process[] processes = Process.GetProcessesByName(TargetProcessName);
-            if (processes.Length > 0)
-            {
-                // Возвращаем хэндл главного окна найденного процесса
-                return processes[0].MainWindowHandle;
-            }
-
-            // Если по имени процесса не нашли, можно попробовать найти по заголовку окна (менее надежно)
-            return FindWindow(null, "Sphere");
+            var gameWindows = FindAllGameWindows();
+            return gameWindows.Count > 0 ? gameWindows[0] : IntPtr.Zero;
         }
         
         // ========= КОНЕЦ ИЗМЕНЕНИЙ =========
@@ -927,7 +936,7 @@ namespace DollOverlay
                     TablesScrollViewer.Visibility = Visibility.Collapsed;
                     EditCastleScroll.Visibility = Visibility.Visible;
                     Dispatcher.BeginInvoke(new Action(() => {
-                        FillingTimeTextBox.Focus();
+                        FocusAndSelect(FillingTimeTextBox);
                     }), DispatcherPriority.Input);
                 }
             }
@@ -963,6 +972,7 @@ namespace DollOverlay
             ClearError();
 
             if (_selectedCastle == null)
+
             {
                 ShowError("Замок не выбран");
                 return;
@@ -1063,6 +1073,28 @@ namespace DollOverlay
             var response = await _httpClient.PostAsync($"{TablesUrl}/{_selectedTableId}/save-castle", content);
             response.EnsureSuccessStatusCode();
 
+        }
+
+        private bool IsAnyComboBoxDropdownOpen(DependencyObject parent)
+        {
+            if (parent == null) return false;
+
+            // Проверяем сам элемент, если это ComboBox
+            if (parent is ComboBox comboBox && comboBox.IsDropDownOpen)
+            {
+                return true;
+            }
+
+            // Рекурсивно ищем в дочерних элементах
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (IsAnyComboBoxDropdownOpen(child))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void FillingSpheretimeTextBox_LostFocus(object sender, RoutedEventArgs e)
@@ -1167,7 +1199,7 @@ namespace DollOverlay
 
             // Настраиваем и запускаем таймер для поддержания окна Topmost
             // ========= ИЗМЕНЕНИЕ ИНТЕРВАЛА ТАЙМЕРА =========
-            _topmostTimer.Interval = TimeSpan.FromMilliseconds(500);
+            _topmostTimer.Interval = TimeSpan.FromMilliseconds(1000);
             _topmostTimer.Tick += TopmostTimer_Tick;
             _topmostTimer.Start();
 
@@ -1180,6 +1212,19 @@ namespace DollOverlay
 
             CastlesDataGrid.ItemsSource = _castlesObservable;
             this.Closing += Window_Closing;
+
+            this.Topmost = true;
+    
+            // Когда окно полностью создано, настраиваем его стили
+            SourceInitialized += MainWindow_SourceInitialized;
+
+            // Устанавливаем хук при запуске
+            _keyboardHook = HookCallback;
+            _keyboardHookID = SetHook(_keyboardHook);
+
+            _windowDiscoveryTimer.Interval = TimeSpan.FromSeconds(2);
+            _windowDiscoveryTimer.Tick += WindowDiscoveryTimer_Tick;
+            _windowDiscoveryTimer.Start();
 
             LoadTokenFromFile();
             if (!string.IsNullOrEmpty(_token))
@@ -1201,6 +1246,664 @@ namespace DollOverlay
                 IsSavedLoading = false;
             }
         }
+
+        private void WindowDiscoveryTimer_Tick(object sender, EventArgs e)
+        {
+            if (IsAnyComboBoxDropdownOpen(this))
+            {
+                return; 
+            }
+
+            // Периодически проверяем появление новых окон игры
+            var currentGameWindows = FindAllGameWindows();
+
+            if (currentGameWindows.Count > 0)
+            {
+                // Если нашли окна игры, принудительно обновляем позиционирование
+                IntPtr myWindowHandle = new WindowInteropHelper(this).Handle;
+                foreach (var gameWindow in currentGameWindows)
+                {
+                    SetWindowPos(myWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+                }
+            }
+        }
+
+        private void MainWindow_SourceInitialized(object sender, EventArgs e)
+        {
+            IntPtr hwnd = new WindowInteropHelper(this).Handle;
+            
+            int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+            
+            // Основные стили для оверлея
+            exStyle |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
+            
+            // Если хотите, чтобы клики проходили сквозь оверлей - раскомментируйте:
+            // exStyle |= WS_EX_TRANSPARENT;
+            
+            SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+        }
+
+        private IntPtr SetHook(LowLevelKeyboardProc proc)
+        {
+            using (Process curProcess = Process.GetCurrentProcess())
+            using (ProcessModule curModule = curProcess.MainModule)
+            {
+                return SetWindowsHookEx(WH_KEYBOARD_LL, proc,
+                    GetModuleHandle(curModule.ModuleName), 0);
+            }
+        }
+
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
+            {
+                int vkCode = Marshal.ReadInt32(lParam);
+
+                // Получаем список активных контролов для ТЕКУЩЕГО экрана
+                var formControls = GetActiveInputControls();
+                
+                // Если активных полей нет (например, мы просто смотрим таблицу), хук не перехватывает ввод
+                if (formControls.Count > 0)
+                {
+                    var focusedControl = Keyboard.FocusedElement as Control;
+
+                    // Логика Tab (работает глобально для всех форм)
+                    // if ((focusedControl == null || !formControls.Contains(focusedControl)) && vkCode == 9)
+                    // {
+                    //     Dispatcher.Invoke(() =>
+                    //     {
+                    //         if (formControls.Count > 0) FocusAndSelect(formControls[0]);
+                    //     });
+                    //     return (IntPtr)1;
+                    // }
+
+                    if (focusedControl != null && formControls.Contains(focusedControl))
+                    {
+                        // 1. Обработка COMBOBOX (только для экрана редактирования)
+                        if (focusedControl is ComboBox comboBox)
+                        {
+                            if (vkCode == 38) // Вверх
+                            {
+                                Dispatcher.Invoke(() => { if (comboBox.SelectedIndex > 0) comboBox.SelectedIndex--; });
+                                return (IntPtr)1;
+                            }
+                            if (vkCode == 40) // Вниз
+                            {
+                                Dispatcher.Invoke(() => { if (comboBox.SelectedIndex < comboBox.Items.Count - 1) comboBox.SelectedIndex++; });
+                                return (IntPtr)1;
+                            }
+                            // if (vkCode == 27) return (IntPtr)1; // Esc  
+                        }
+
+                        // 2. TAB - Навигация
+                        if (vkCode == 9)
+                        {
+                            bool isShiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0;
+                            Dispatcher.Invoke(() => HandleTabNavigation(focusedControl, isShiftPressed));
+                            return (IntPtr)1;
+                        }
+
+                        if (vkCode == 27) 
+                        {
+                            // Если нажат Escape, и мы на экране редактирования
+                            if (EditCastleScroll.Visibility == Visibility.Visible)
+                            {
+                                // Выполняем BackFromEditButton_Click
+                                Dispatcher.Invoke(() => BackFromEditButton_Click(null, null));
+                            }
+                            // Блокируем Esc, чтобы не передавать его дальше в игру или систему
+                            return (IntPtr)1; 
+                        }
+
+                        // 3. ENTER - Действие
+                       if (vkCode == 13 && !(focusedControl is Button))
+                        {
+                            // Логика для входа (Email/Token), если панели видимы
+                            if (EmailLoginPanel.Visibility == Visibility.Visible)
+                                Dispatcher.Invoke(() => LoginButton_Click(null, null));
+                            else if (TokenLoginPanel.Visibility == Visibility.Visible)
+                                Dispatcher.Invoke(() => TokenLoginButton_Click(null, null));
+                            // Если мы на экране редактирования (EditCastleScroll.Visibility == Visible)
+                            else if (EditCastleScroll.Visibility == Visibility.Visible)
+                                MessageBox.Show("EST");
+                                Dispatcher.Invoke(() => SaveCastleButton_Click(null, null));
+                            
+                            // Блокируем Enter
+                            return (IntPtr)1;
+                        }
+
+                        // 4. BACKSPACE / DELETE
+                        if (vkCode == 8 || vkCode == 46)
+                        {
+                            Dispatcher.Invoke(() => HandleSpecialKey(focusedControl, vkCode));
+                            return (IntPtr)1;
+                        }
+
+                        // 5. CTRL+V (ВСТАВКА)
+                        // VK_V = 86, VK_CONTROL = 17 (Проверяем, что клавиша Ctrl нажата: 0x8000 = high-order bit set)
+                        if (vkCode == 86 && (GetAsyncKeyState(0x11) & 0x8000) != 0) 
+                        {
+                            // Проверяем, что фокус находится на поле ввода, поддерживающем вставку
+                            if (focusedControl is TextBox || focusedControl is PasswordBox)
+                            {
+                                Dispatcher.Invoke(() => HandlePaste(focusedControl));
+                                return (IntPtr)1; // Блокируем дальнейшую обработку этого события
+                            }
+                        }
+
+                        // 6. ВВОД ТЕКСТА (TextBox и PasswordBox)
+                        // Проверяем, что это поле ввода
+                        if (focusedControl is TextBox || focusedControl is PasswordBox)
+                        {
+                            char? character = GetCharacterFromVkCode((uint)vkCode);
+
+                            if (character.HasValue)
+                            {
+                                Dispatcher.Invoke(() => HandleKeyPress(focusedControl, character.Value));
+                                return (IntPtr)1;
+                            }
+                        }
+                    }
+                }
+            }
+            return CallNextHookEx(_keyboardHookID, nCode, wParam, lParam);
+        }
+
+        private void HandlePaste(Control focusedControl)
+        {
+            // Проверяем, есть ли текст в буфере обмена
+            if (Clipboard.ContainsText())
+            {
+                // Получаем текст и очищаем его от переносов строк, чтобы не ломать однострочные поля
+                string textToPaste = Clipboard.GetText()
+                                            .Replace("\r", "")
+                                            .Replace("\n", "");
+
+                if (focusedControl is TextBox textBox)
+                {
+                    // Логика вставки в TextBox с учетом курсора и выделения
+                    int caretIndex = textBox.CaretIndex;
+                    string currentText = textBox.Text;
+
+                    // Если что-то выделено, удаляем выделенное
+                    if (textBox.SelectionLength > 0)
+                    {
+                        caretIndex = textBox.SelectionStart;
+                        currentText = currentText.Remove(caretIndex, textBox.SelectionLength);
+                    }
+
+                    // Вставляем текст и устанавливаем курсор
+                    textBox.Text = currentText.Insert(caretIndex, textToPaste);
+                    textBox.CaretIndex = caretIndex + textToPaste.Length;
+                }
+                else if (focusedControl is PasswordBox passwordBox)
+                {
+                    // Для PasswordBox просто добавляем текст в конец
+                    passwordBox.Password += textToPaste;
+                }
+            }
+        }
+
+        private char? GetCharacterFromVkCode(uint vkCode)
+        {
+            // Игнорируем управляющие клавиши (Shift, Ctrl, Alt, Caps, и т.д. по отдельности)
+            if ((vkCode >= 16 && vkCode <= 18) || vkCode == 20 || vkCode == 160 || vkCode == 161)
+                return null;
+
+            // 1. Подготавливаем массив состояния клавиатуры
+            byte[] keyboardState = new byte[256];
+
+            // Так как наше окно WS_EX_NOACTIVATE, обычный GetKeyboardState может вернуть неактуальные данные.
+            // Надежнее проверить физическое состояние клавиш Shift и CapsLock.
+            
+            // Проверяем Shift (левый или правый)
+            if ((GetAsyncKeyState(0x10) & 0x8000) != 0)
+            {
+                keyboardState[0x10] = 0x80; 
+            }
+
+            // Проверяем CapsLock (младший бит = 1, если включен)
+            if ((GetKeyState(0x14) & 0x0001) != 0)
+            {
+                keyboardState[0x14] = 0x01; 
+            }
+
+            // Дополнительно можно подтянуть остальное состояние, если нужно
+            // GetKeyboardState(keyboardState); 
+
+            // 2. Определяем раскладку клавиатуры АКТИВНОГО окна (игры), а не нашего оверлея
+            IntPtr activeWindow = GetForegroundWindow();
+            uint processId;
+            uint activeThreadId = GetWindowThreadProcessId(activeWindow, out processId);
+
+            // Получаем раскладку именно того потока, где сейчас фокус ввода
+            IntPtr hkl = GetKeyboardLayout(activeThreadId);
+
+            uint scanCode = MapVirtualKey(vkCode, 0); // 0 = MAPVK_VK_TO_SC
+            
+            StringBuilder outChar = new StringBuilder(5);
+            
+            // Используем флаг 4 (MENU_IS_NOT_ACTIVE), чтобы не вызывать срабатывание меню
+            int result = ToUnicodeEx(vkCode, scanCode, keyboardState, outChar, outChar.Capacity, 0, hkl);
+
+            if (result > 0) 
+            {
+                return outChar[0];
+            }
+            
+            return null;
+        }
+
+        private List<Control> GetActiveInputControls()
+        {
+            var controls = new List<Control>();
+
+            // 1. ПРИОРИТЕТ 1: Редактирование замка (проверяем первым)
+            if (EditCastleScroll.Visibility == Visibility.Visible)
+            {
+                if (FillingTimeTextBox != null) controls.Add(FillingTimeTextBox);
+                if (FillingDateComboBox != null) controls.Add(FillingDateComboBox);
+                if (FillingLvlComboBox != null) controls.Add(FillingLvlComboBox);
+                if (FillingSpheretimeTextBox != null) controls.Add(FillingSpheretimeTextBox);
+                if (ClanComboBox != null) controls.Add(ClanComboBox);
+                if (CommentaryTextBox != null) controls.Add(CommentaryTextBox);
+                if (CancelEditButton != null) controls.Add(CancelEditButton);
+                if (SaveCastleButton != null) controls.Add(SaveCastleButton);
+            }
+            // 2. ПРИОРИТЕТ 2: Вход по Email
+            else if (EmailLoginPanel.Visibility == Visibility.Visible)
+            {
+                controls.Add(EmailTextBox);
+                controls.Add(PasswordBox);
+                controls.Add(LoginButton);
+            }
+            // 3. ПРИОРИТЕТ 3: Вход по Токену
+            else if (TokenLoginPanel.Visibility == Visibility.Visible)
+            {
+                controls.Add(TokenTextBox);
+                controls.Add(TokenLoginButton);
+            }
+
+            return controls;
+        }
+        
+        private void HandleSpecialKey(Control focusedControl, int vkCode)
+        {
+            // --- TEXTBOX ---
+            if (focusedControl is TextBox textBox)
+            {
+                int caretIndex = textBox.CaretIndex;
+                string currentText = textBox.Text;
+
+                if (textBox.SelectionLength > 0)
+                {
+                    int start = textBox.SelectionStart;
+                    textBox.Text = currentText.Remove(start, textBox.SelectionLength);
+                    textBox.CaretIndex = start;
+                }
+                else if (vkCode == 8 && caretIndex > 0) // Backspace
+                {
+                    textBox.Text = currentText.Remove(caretIndex - 1, 1);
+                    textBox.CaretIndex = caretIndex - 1;
+                }
+                else if (vkCode == 46 && caretIndex < currentText.Length) // Delete
+                {
+                    textBox.Text = currentText.Remove(caretIndex, 1);
+                    textBox.CaretIndex = caretIndex;
+                }
+            }
+            // --- PASSWORDBOX ---
+            else if (focusedControl is PasswordBox passwordBox)
+            {
+                // Только Backspace (удаляем последний символ)
+                if (vkCode == 8 && passwordBox.Password.Length > 0)
+                {
+                    passwordBox.Password = passwordBox.Password.Substring(0, passwordBox.Password.Length - 1);
+                }
+            }
+        }
+
+        private void FocusAndSelect(Control control)
+        {
+            control.Focus();
+            // Если это текстовое поле, выделяем весь текст принудительно
+            if (control is TextBox textBox)
+            {
+                textBox.SelectAll();
+            }
+        }
+
+        private void HandleTabNavigation(Control currentControl, bool isReverse = false)
+        {
+           var inputControls = GetActiveInputControls(); 
+            if (inputControls.Count == 0) return;
+
+            int currentIndex = inputControls.IndexOf(currentControl);
+            if (currentIndex == -1) currentIndex = 0;
+
+            int nextIndex = isReverse ?
+                (currentIndex - 1 + inputControls.Count) % inputControls.Count :
+                (currentIndex + 1) % inputControls.Count;
+
+            FocusAndSelect(inputControls[nextIndex]);
+        }
+
+        // Метод для получения всех инпутов в форме редактирования
+        private List<Control> GetInputControlsInEditForm()
+        {
+             var controls = new List<Control>();
+            try
+            {
+                // Проверяем видимость формы редактирования
+                if (EditCastleScroll == null || EditCastleScroll.Visibility != Visibility.Visible)
+                {
+                    Debug.WriteLine("Форма редактирования не видима");
+                    return controls;
+                }
+
+                // Добавляем элементы в правильном порядке (согласно их TabIndex в XAML)
+                // FillingTimeTextBox (TabIndex="1")
+                if (FillingTimeTextBox != null && FillingTimeTextBox.IsVisible && FillingTimeTextBox.IsEnabled)
+                    controls.Add(FillingTimeTextBox);
+
+                // FillingDateComboBox (TabIndex="2")
+                if (FillingDateComboBox != null && FillingDateComboBox.IsVisible && FillingDateComboBox.IsEnabled)
+                    controls.Add(FillingDateComboBox);
+
+                // FillingLvlComboBox (TabIndex="3")
+                if (FillingLvlComboBox != null && FillingLvlComboBox.IsVisible && FillingLvlComboBox.IsEnabled)
+                    controls.Add(FillingLvlComboBox);
+
+                // ClanComboBox (TabIndex="4")
+                if (FillingSpheretimeTextBox != null && FillingSpheretimeTextBox.IsVisible && FillingSpheretimeTextBox.IsEnabled)
+                    controls.Add(FillingSpheretimeTextBox);
+                
+                
+                // FillingSpheretimeTextBox (TabIndex="5")
+                if (ClanComboBox != null && ClanComboBox.IsVisible && ClanComboBox.IsEnabled)
+                    controls.Add(ClanComboBox);
+
+                // CommentaryTextBox (TabIndex="6")
+                if (CommentaryTextBox != null && CommentaryTextBox.IsVisible && CommentaryTextBox.IsEnabled)
+                    controls.Add(CommentaryTextBox);
+                    
+                // BackFromEditButton (TabIndex="7")
+                if (CancelEditButton != null && CancelEditButton.IsVisible && CancelEditButton.IsEnabled)
+                    controls.Add(CancelEditButton);
+
+                // SaveCastleButton (TabIndex="8")
+                if (SaveCastleButton != null && SaveCastleButton.IsVisible && SaveCastleButton.IsEnabled)
+                    controls.Add(SaveCastleButton);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при получении контролов: {ex.Message}");
+            }
+
+            return controls;
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Обработка клавиши Tab для ручного переключения фокуса, 
+            // необходимого из-за использования WS_EX_NOACTIVATE
+            if (e.Key == Key.Tab && EditCastleScroll.Visibility == Visibility.Visible)
+            {
+                e.Handled = true; // Отключаем стандартное поведение Tab
+                
+                var controls = GetInputControlsInEditForm();
+                if (controls.Count == 0) return;
+
+                // Определяем текущий элемент в фокусе
+                var focusedElement = Keyboard.FocusedElement as Control;
+                int currentIndex = -1;
+
+                // Находим индекс текущего элемента в нашем списке
+                for (int i = 0; i < controls.Count; i++)
+                {
+                    if (controls[i] == focusedElement)
+                    {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+
+                // Если фокус на элементе, который не в списке, начинаем с первого/последнего
+                if (currentIndex == -1)
+                {
+                    if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                    {
+                        // Shift+Tab: начинаем с последнего
+                        Keyboard.Focus(controls.Last());
+                    }
+                    else
+                    {
+                        // Tab: начинаем с первого
+                        Keyboard.Focus(controls.First());
+                    }
+                    return;
+                }
+
+                int nextIndex;
+                bool isShiftDown = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+                if (isShiftDown) // Shift+Tab (назад)
+                {
+                    nextIndex = (currentIndex - 1 + controls.Count) % controls.Count;
+                }
+                else // Tab (вперед)
+                {
+                    nextIndex = (currentIndex + 1) % controls.Count;
+                }
+
+                // Устанавливаем фокус на следующий элемент
+                Keyboard.Focus(controls[nextIndex]);
+            }
+        }
+
+        private void FindControlsRecursive(DependencyObject parent, List<Control> controls)
+        {
+            if (parent == null) return;
+            
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                if (child is Control control && 
+                    (control is TextBox || control is ComboBox) &&
+                    control.Visibility == Visibility.Visible &&
+                    control.IsEnabled)
+                {
+                    controls.Add(control);
+                }
+                
+                // Рекурсивно ищем в дочерних элементах
+                FindControlsRecursive(child, controls);
+            }
+        }
+
+        private bool IsNavigationKey(int vkCode)
+        {
+            int[] navigationKeys = {
+                9,   // Tab
+                13,  // Enter
+                27,  // Escape
+                37,  // Left arrow
+                38,  // Up arrow
+                39,  // Right arrow
+                40,  // Down arrow
+                33,  // Page Up
+                34,  // Page Down
+                36,  // Home
+                35,  // End
+                16,  // Shift
+                17,  // Control
+                18,  // Alt
+                20,  // Caps Lock
+                91,  // Left Windows
+                92,  // Right Windows
+                112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, // F1-F12
+            };
+            
+            return navigationKeys.Contains(vkCode);
+        }
+
+        private bool IsTextInputKey(int vkCode)
+        {
+            // Буквы A-Z
+            if (vkCode >= 65 && vkCode <= 90)
+                return true;
+            
+            // Цифры 0-9
+            if (vkCode >= 48 && vkCode <= 57)
+                return true;
+            
+            // Специальные клавиши ввода
+            if (vkCode == 8 || vkCode == 32) // Backspace, Space
+                return true;
+            
+            return false;
+        }
+
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int vKey);
+        private const uint SWP_NOACTIVATE = 0x0010;
+
+        private List<IntPtr> FindAllGameWindows()
+        {
+            var gameWindows = new List<IntPtr>();
+    
+            try
+            {
+                // Ищем по имени процесса
+                Process[] processes = Process.GetProcessesByName(TargetProcessName);
+                foreach (Process process in processes)
+                {
+                    if (process != null && !process.HasExited && process.MainWindowHandle != IntPtr.Zero)
+                    {
+                        gameWindows.Add(process.MainWindowHandle);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Игнорируем ошибки при поиске процессов
+            }
+            
+            return gameWindows;
+        }
+
+        // Добавьте эти импорты
+        [DllImport("user32.dll")]
+        private static extern int EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetKeyboardLayout(uint idThread); // Получение хэндла раскладки для потока
+
+        [DllImport("user32.dll")]
+        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+
+        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        private bool IsGameWindow(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero) return false;
+            
+            StringBuilder windowText = new StringBuilder(256);
+            GetWindowText(hWnd, windowText, windowText.Capacity);
+            
+            string title = windowText.ToString();
+            return !string.IsNullOrEmpty(title) && 
+                (title.Contains("Sphere") || title.Contains("SphereClient"));
+        }
+
+        private void HandleKeyPress(Control focusedControl, char character)
+        {       
+            // --- ЛОГИКА ДЛЯ TEXTBOX ---
+            // focusedControl приводится к TextBox, и новая переменная 'textBox' объявляется внутри этого if.
+            if (focusedControl is TextBox textBox)
+            {
+                int caretIndex = textBox.CaretIndex;
+                string currentText = textBox.Text;
+
+                if (textBox.SelectionLength > 0)
+                {
+                    caretIndex = textBox.SelectionStart; 
+                    currentText = currentText.Remove(caretIndex, textBox.SelectionLength);
+                }
+
+                if (caretIndex >= 0 && caretIndex <= currentText.Length)
+                {
+                    if (character == ',') character = '.';
+                    
+                    textBox.Text = currentText.Insert(caretIndex, character.ToString());
+                    
+                    textBox.CaretIndex = caretIndex + 1;
+                }
+            }
+            // --- ЛОГИКА ДЛЯ PASSWORDBOX ---
+            // focusedControl приводится к PasswordBox, и новая переменная 'passwordBox' объявляется здесь.
+            else if (focusedControl is PasswordBox passwordBox)
+            {
+                // У PasswordBox нет CaretIndex, поэтому просто добавляем в конец
+                passwordBox.Password += character;
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            UnhookWindowsHookEx(_keyboardHookID);
+            base.OnClosed(e);
+        }
+
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        private const int WS_EX_NOACTIVATE = 0x08000000;
+        private const int WS_EX_TRANSPARENT = 0x00000020;
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+        [DllImport("user32.dll")]
+        private static extern int ToUnicodeEx(
+            uint wVirtKey,
+            uint wScanCode,
+            byte[] lpKeyState,
+            [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 256)]
+            StringBuilder pwszBuff,
+            int cchBuff,
+            uint wFlags,
+            IntPtr dwhkl); // Добавлен хэндл раскладки
+
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetKeyboardState(byte[] lpKeyState);
+
+        private const int WH_KEYBOARD_LL = 13;
+        private const int WM_KEYDOWN = 0x0100;
+        private LowLevelKeyboardProc _keyboardHook;
+        private IntPtr _keyboardHookID = IntPtr.Zero;
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
         private void ToggleBackgroundButton_Click(object sender, RoutedEventArgs e)
         {
