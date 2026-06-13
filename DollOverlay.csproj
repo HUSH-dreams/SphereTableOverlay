@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageReference Include="System.Net.Http.Json" Version="9.0.8" />
     <PackageReference Include="TeximpNet" Version="1.4.2" />
     <PackageReference Include="FreeImage-dotnet-core" Version="4.2.0" />
@@ -12,10 +15,16 @@
     <None Include="images\frames.png" CopyToOutputDirectory="Always" />
     <None Include="images\i_pup1.png" CopyToOutputDirectory="Always" />
   </ItemGroup>
-  <ItemGroup>
+ <ItemGroup>
     <Content Include="images\*.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="settings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="button_settings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="column_order.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="token.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   
 

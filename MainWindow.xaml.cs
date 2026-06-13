@@ -2088,46 +2088,54 @@ public bool IsContentCollapsed
         }
 
         private void SaveColumnOrder()
-          {
-              if (_isRestoring) return;
-
-              try
-              {
-                  // Сохраняем и порядок, и ширину: SortMemberPath -> (DisplayIndex, Width)
-                 var columnData = new Dictionary<string, double[]>();
-
-                 foreach (var column in CastlesDataGrid.Columns)
-                 {
-                     if (!string.IsNullOrEmpty(column.SortMemberPath))
-                     {
-                         double width = column.Width.IsAbsolute ? column.Width.Value : column.ActualWidth;
-                         if (width < 1) width = column.MinWidth;
-                         columnData[column.SortMemberPath] = new[] { (double)column.DisplayIndex, width };
-                     }
-                 }
-
-                 var json = JsonSerializer.Serialize(columnData);
-                 File.WriteAllText(ColumnOrderFileName, json);
-             }
-             catch (Exception ex)
              {
-                 // Игнорируем ошибки, т.к. это не критично для работы
+                 if (_isRestoring) return;
+
+                 try
+                 {
+                     // Сохраняем и порядок, и ширину: SortMemberPath -> (DisplayIndex, Width)
+                     var columnData = new Dictionary<string, double[]>();
+
+                     foreach (var column in CastlesDataGrid.Columns)
+                     {
+                         if (!string.IsNullOrEmpty(column.SortMemberPath))
+                         {
+                             double width = column.Width.IsAbsolute ? column.Width.Value : column.ActualWidth;
+                             if (width < 1) width = column.MinWidth;
+                             columnData[column.SortMemberPath] = new[] { (double)column.DisplayIndex, width };
+                             App.Logger.Information("SaveCol: {SortMemberPath} idx={DisplayIndex} width={Width} IsAbs={IsAbsolute}",
+                                 column.SortMemberPath, column.DisplayIndex, width, column.Width.IsAbsolute);
+                         }
+                     }
+
+                     var json = JsonSerializer.Serialize(columnData);
+                     File.WriteAllText(ColumnOrderFileName, json);
+                     App.Logger.Information("SaveColumnOrder saved: {Json}", json);
+                 }
+                 catch (Exception ex)
+                 {
+                     App.Logger.Error(ex, "SaveColumnOrder error");
+                 }
              }
-         }
 
           private void OnColumnResizeMouseUp(object sender, MouseButtonEventArgs e)
-          {
-              if (!_isRestoring)
-                  SaveColumnOrder();
-          }
+           {
+               if (!_isRestoring)
+                   Dispatcher.BeginInvoke(new Action(SaveColumnOrder), DispatcherPriority.Background);
+           }
 
-          private void LoadColumnOrder()
+                private void LoadColumnOrder()
         {
             try
             {
-                if (!File.Exists(ColumnOrderFileName)) return;
+                if (!File.Exists(ColumnOrderFileName))
+                {
+                    App.Logger.Information("LoadColumnOrder: file not found, skipping");
+                    return;
+                }
 
                 var json = File.ReadAllText(ColumnOrderFileName);
+                App.Logger.Information("LoadColumnOrder: loaded json={Json}", json);
                 var columnData = JsonSerializer.Deserialize<Dictionary<string, double[]>>(json);
 
                 if (columnData == null)
@@ -2156,16 +2164,20 @@ public bool IsContentCollapsed
                         if (data.Length >= 1)
                             column.DisplayIndex = (int)data[0];
                         if (data.Length >= 2 && data[1] > 0)
+                        {
+                            var oldWidth = column.Width;
                             column.Width = new DataGridLength(data[1]);
+                            App.Logger.Information("LoadCol: {SortMemberPath} width {OldWidth} -> {NewWidth}",
+                                column.SortMemberPath, oldWidth, column.Width);
+                        }
                     }
                 }
             }
             catch (Exception ex)
-              {
-                  App.Logger.Error(ex, "Повреждён файл порядка колонок, удаляю: {FilePath}", ColumnOrderFileName);
-                  try { File.Delete(ColumnOrderFileName); } catch { }
-                  // Если файл поврежден или что-то пошло не так, просто используем порядок по умолчанию
-              }
+            {
+                App.Logger.Error(ex, "Повреждён файл порядка колонок, удаляю: {FilePath}", ColumnOrderFileName);
+                try { File.Delete(ColumnOrderFileName); } catch { }
+            }
         }
 
         private void ClearFormFields()
@@ -3384,7 +3396,6 @@ private void ApplySettings()
 
         // Применяем остальные настройки
         ApplyLevelButtonFontSize(_levelButtonFontSize);
-        ApplyColumnScale(_columnScale);
         RestoreStatusShapeInSettings();
         RestoreTimeFormatInSettings();
     }

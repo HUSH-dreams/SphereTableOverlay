@@ -26,8 +26,10 @@
                               CornerRadius="0"
                               GlassFrameThickness="0"/>
         </WindowChrome.WindowChrome>
-        <Window.Resources>
+<Window.Resources>
                 <local:OpacityToVisibilityConverter x:Key="OpacityToVisibilityConverter"/>
+                <local:StatusShapeConverter x:Key="StatusShapeConverter"/>
+                <local:StatusIndicatorSizeConverter x:Key="StatusIndicatorSizeConverter"/>
           
         <Style x:Key="BaseTextBoxStyle" TargetType="TextBox">
                 <Setter Property="Foreground" Value="White"/>
@@ -466,6 +468,16 @@
                                 Value="0,10,0,0"/>
                         <Setter Property="MaxWidth"
                                 Value="400"/>
+                </Style>
+
+                <Style x:Key="BaseButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="#333333"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="10,5"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="FontSize" Value="14"/>
+                        <Setter Property="Cursor" Value="Hand"/>
                 </Style>
 
                 <Style x:Key="LoginButtonStyle"
@@ -980,6 +992,17 @@
                                                 
                                 </Button>
                                 
+                                <Button x:Name="SettingsButton"
+                                         Width="20"
+                                         Height="30"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Margin="0,4,0,0"
+                                         Click="SettingsButton_Click"
+                                         ToolTip="Настройки">
+                                         <Image Source="./images/settings.png" Stretch="Uniform"/>
+                                 </Button>
+                                
                                 <Button x:Name="CloseButton"
                                         Width="20"
                                         FontSize="16"
@@ -1234,15 +1257,20 @@
                                                 </Style>
                                         </DataGrid.RowStyle>
                                         <DataGrid.Columns>
-                                                <DataGridTemplateColumn Header=""
+                                               <DataGridTemplateColumn Header=""
                                                                         Width="30"
                                                                         MinWidth="30">
-                                                        <DataGridTemplateColumn.CellTemplate>
+                                                        <DataGridTemplateColumn.CellStyle>
+                                                                <Style TargetType="DataGridCell">
+                                                                        <Setter Property="Padding" Value="15,0,0,0"/>
+                                                                </Style>
+                                                        </DataGridTemplateColumn.CellStyle>
+<DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
                                                                         <Border Background="{Binding StatusColor}"
-                                                                                Width="20"
-                                                                                Height="20"
-                                                                                CornerRadius="3"
+                                                                                Width="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=ActualWidth, Converter={StaticResource StatusIndicatorSizeConverter}, ConverterParameter=Width}"
+                                                                                Height="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=ActualHeight, Converter={StaticResource StatusIndicatorSizeConverter}, ConverterParameter=Height}"
+                                                                                CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=ActualWidth, Converter={StaticResource StatusIndicatorSizeConverter}, ConverterParameter=CornerRadius}"
                                                                                 HorizontalAlignment="Center"
                                                                                 VerticalAlignment="Center"/>
                                                                 </DataTemplate>
@@ -1260,7 +1288,7 @@
                                                                         <Setter Property="FontWeight"
                                                                                 Value="Bold"/>
                                                                         <Setter Property="Margin"
-                                                                                Value="7,0"/>
+                                                                                Value="0,0"/>
                                                                         <Style.Triggers>
                                                                                 <DataTrigger Binding="{Binding WhiteTime}"
                                                                                              Value="-">
@@ -1284,7 +1312,7 @@
                                                         <Style TargetType="TextBlock">
                                                             <Setter Property="VerticalAlignment" Value="Center"/>
                                                             <Setter Property="HorizontalAlignment" Value="Center"/>
-                                                            <Setter Property="Margin" Value="7,0"/>
+                                                            <Setter Property="Margin" Value="0,0"/>
                                                         </Style>
                                                     </DataGridTextColumn.ElementStyle>
                                                 </DataGridTextColumn>
@@ -1333,7 +1361,7 @@
                                                         <DataGridTextColumn.ElementStyle>
                                                                 <Style TargetType="TextBlock">
                                                                         <Setter Property="Margin"
-                                                                                Value="7,0"/>
+                                                                                Value="0,0"/>
                                                                         <Setter Property="VerticalAlignment"
                                                                                 Value="Center"/>
                                                                 </Style>
@@ -1383,7 +1411,7 @@
                                                         <Style TargetType="TextBlock">
                                                             <Setter Property="VerticalAlignment" Value="Center"/>
                                                             <Setter Property="HorizontalAlignment" Value="Left"/>
-                                                            <Setter Property="Margin" Value="7,0"/>
+                                                            <Setter Property="Margin" Value="0,0"/>
                                                         </Style>
                                                     </DataGridTextColumn.ElementStyle>
                                                 </DataGridTextColumn>
@@ -1395,7 +1423,7 @@
                                                         <DataGridTextColumn.ElementStyle>
                                                                 <Style TargetType="TextBlock">
                                                                         <Setter Property="Margin"
-                                                                                Value="7,0"/>
+                                                                                Value="0,0"/>
                                                                         <Setter Property="VerticalAlignment"
                                                                                 Value="Center"/>
                                                                 </Style>
@@ -1556,7 +1584,7 @@
                                 </Button>
                         </StackPanel>
 
-                        <ScrollViewer Grid.Row="1"
+                        <ScrollViewer Grid.Row="0"
                                       VerticalScrollBarVisibility="Auto"
                                       x:Name="EditCastleScroll"
                                       Visibility="Collapsed">
@@ -1724,7 +1752,7 @@
                                                    Visibility="Collapsed"/>
                                 </StackPanel>
                         </ScrollViewer>
-                </Grid>
+        </Grid>
         </Grid>
         </Grid>
 </Window>
