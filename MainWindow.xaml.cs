@@ -29,6 +29,12 @@ using System.Windows.Shapes;
 
 namespace DollOverlay
 {
+    public enum StatusIndicatorShape
+    {
+        RoundedSquare,
+        Circle,
+        VerticalBar
+    }
 
     public class OpacityToVisibilityConverter : IValueConverter
     {
@@ -55,7 +61,7 @@ namespace DollOverlay
     }
 
     // Класс для хранения настроек окна
-    public class WindowSettings
+   public class WindowSettings
     {
         public double Top { get; set; }
         public double Left { get; set; }
@@ -63,6 +69,14 @@ namespace DollOverlay
         public double Width { get; set; }
         public string? SelectedTableId { get; set; }
         public bool IsBackgroundOpaque { get; set; }
+        public double ColumnScale { get; set; } = 1.0;
+        public double LevelButtonFontSize { get; set; } = 14.0;
+        public double FontSize { get; set; } = 16.0;
+        public double ColumnSpacing { get; set; } = 10.0;
+        public double RowSpacing { get; set; } = 30.0;
+        public double EditCastleRowSpacing { get; set; } = 8.0;
+        public StatusIndicatorShape StatusIndicatorShape { get; set; } = StatusIndicatorShape.RoundedSquare;
+        public bool UseColonFormat { get; set; } = false;
     }
 
     public class ButtonSettings
@@ -315,9 +329,10 @@ namespace DollOverlay
         }
     }
 
-    // Модель для данных замка
+// Модель для данных замка
     public class Castle : INotifyPropertyChanged
     {
+        public static bool UseColonFormat = false;
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private int _id;
@@ -479,7 +494,7 @@ namespace DollOverlay
             }
         }
 
-        public string WhiteTime
+public string WhiteTime
         {
             get
             {
@@ -501,6 +516,13 @@ namespace DollOverlay
                 if (timeRemaining.TotalMinutes <= 0 && timeRemaining.TotalMinutes > -3)
                 {
                     return "Белый";
+                }
+
+                if (Castle.UseColonFormat)
+                {
+                    int hours = (int)timeRemaining.TotalHours;
+                    int minutes = timeRemaining.Minutes;
+                    return $"{hours}:{minutes:D2}";
                 }
 
                 return $"{(int)timeRemaining.TotalHours}ч {timeRemaining.Minutes}м";
@@ -560,23 +582,23 @@ namespace DollOverlay
             {
                 if (StatusText == "Красный")
                 {
-                    return Brushes.Red;
+                    return new SolidColorBrush(Color.FromRgb(0x96, 0x3b, 0x4c));
                 }
                 else if (StatusText == "Желтый")
                 {
-                    return Brushes.Yellow;
+                    return new SolidColorBrush(Color.FromRgb(0xbd, 0x9f, 0x53));
                 }
                 else if (StatusText == "Белый")
                 {
-                    return Brushes.White;
+                    return new SolidColorBrush(Color.FromRgb(0xd7, 0xdb, 0xd9));
                 }
                 else if (StatusText == "N/A" || StatusText == "-")
                 {
-                    return Brushes.DarkSlateGray;
+                    return new SolidColorBrush(Color.FromRgb(0x12, 0x24, 0x1a));
                 }
                 else
                 {
-                    return Brushes.DodgerBlue;
+                    return new SolidColorBrush(Color.FromRgb(0x49, 0x5e, 0x9e));
                 }
             }
         }
@@ -606,7 +628,7 @@ namespace DollOverlay
             }
         }
 
-        public string RedTime
+public string RedTime
         {
             get
             {
@@ -625,7 +647,13 @@ namespace DollOverlay
                     return "-";
                 }
 
-                // Возвращаем оставшееся время в формате "Хч Yм"
+                if (Castle.UseColonFormat)
+                {
+                    int hours = (int)timeRemaining.TotalHours;
+                    int minutes = timeRemaining.Minutes;
+                    return $"{hours}:{minutes:D2}";
+                }
+
                 return $"{(int)timeRemaining.TotalHours}ч {timeRemaining.Minutes}м";
             }
         }
@@ -716,10 +744,10 @@ namespace DollOverlay
         private const string TablesUrl = "https://sphere-doll.ru/api/table";
         private const string WebSocketUrl = "ws://sphere-doll.ru/ws";
 
-        private const string TokenFileName = "token.json";
-        private const string SettingsFileName = "settings.json";
-        private const string ButtonSettingsFileName = "button_settings.json";
-        private const string ColumnOrderFileName = "column_order.json";
+       private static readonly string TokenFileName = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+        private static readonly string SettingsFileName = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
+        private static readonly string ButtonSettingsFileName = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "button_settings.json");
+        private static readonly string ColumnOrderFileName = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "column_order.json");
         private DispatcherTimer _topmostTimer = new DispatcherTimer();
         private bool isBackgroundOpaque = true;
         [DllImport("user32.dll")]
@@ -749,7 +777,7 @@ namespace DollOverlay
             }
         }
 
-        public bool IsContentCollapsed
+public bool IsContentCollapsed
         {
             get => _isContentCollapsed;
             set
@@ -759,6 +787,20 @@ namespace DollOverlay
                     _isContentCollapsed = value;
                     OnIsContentCollapsedChanged(); // Метод для изменения высоты и фона
                     NotifyPropertyChanged();
+                }
+            }
+        }
+
+        public StatusIndicatorShape StatusIndicatorShape
+        {
+            get => _statusIndicatorShape;
+            set
+            {
+                if (_statusIndicatorShape != value)
+                {
+                    _statusIndicatorShape = value;
+                    NotifyPropertyChanged();
+                    ApplyStatusShape();
                 }
             }
         }
@@ -905,9 +947,9 @@ namespace DollOverlay
 
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
+            Log($"[GOTFOCUS] on {sender?.GetType().Name} - {(sender as Control)?.Name}");
             if (sender is Control control)
             {
-                // Используем наш новый метод, чтобы обновить визуальный стиль
                 FocusAndSelect(control);
             }
         }
@@ -956,7 +998,10 @@ namespace DollOverlay
                     }
 
                     TablesScrollViewer.Visibility = Visibility.Collapsed;
+                    TimeButtonsPanel.Visibility = Visibility.Collapsed;
                     EditCastleScroll.Visibility = Visibility.Visible;
+                    ApplyEditCastleFontSize(CastlesDataGrid.FontSize);
+                    ApplyEditCastleRowSpacing(_editCastleRowSpacing);
                     Dispatcher.BeginInvoke(new Action(() => {
                         FocusAndSelect(FillingTimeTextBox);
                     }), DispatcherPriority.Input);
@@ -1064,6 +1109,7 @@ namespace DollOverlay
                 ClearFormFields();
                 EditCastleScroll.Visibility = Visibility.Collapsed;
                 TablesScrollViewer.Visibility = Visibility.Visible;
+                TimeButtonsPanel.Visibility = Visibility.Visible;
                 CastlesDataGrid.SelectedItem = null;
             }
             catch (Exception ex)
@@ -1077,6 +1123,7 @@ namespace DollOverlay
             // Просто скрываем форму редактирования и показываем основное окно
             EditCastleScroll.Visibility = Visibility.Collapsed;
             TablesScrollViewer.Visibility = Visibility.Visible;
+            TimeButtonsPanel.Visibility = Visibility.Visible;
             CastlesDataGrid.SelectedItem = null;
         }
 
@@ -1211,10 +1258,22 @@ namespace DollOverlay
         {
             LoadWindowPosition();
             InitializeComponent();
-            LoadColumnOrder();
+             CastlesDataGrid.ColumnDisplayIndexChanged += (s, e) => SaveColumnOrder();
+               // MouseLeftButtonUp (не Preview!) — срабатывает ПОСЛЕ adorner ресайза
+               // handledEventsToo=true — ловим даже если CastlesDataGrid_MouseLeftButtonUp обработал событие
+               CastlesDataGrid.AddHandler(UIElement.MouseLeftButtonUpEvent,
+                   new MouseButtonEventHandler(OnColumnResizeMouseUp), true);
             ApplyBackgroundState();
             UpdateButtonIconState();
 
+           // Создаём SettingsPanel программно
+            _isRestoring = true; // предотвращаем сохранение дефолтных значений при создании текстовых полей
+            CreateSettingsPanel();
+            ApplyLevelButtonFontSize(_levelButtonFontSize);
+            ApplyColumnScale(_columnScale);
+            LoadColumnOrder();
+            ApplyLoadedSettings();
+            _isRestoring = false; // разрешаем сохранение после загрузки настроек
 
             DataContext = this;
             _loadingStoryboard = this.FindResource("LoadingAnimation") as Storyboard;
@@ -1328,6 +1387,15 @@ namespace DollOverlay
                 if (formControls.Count > 0)
                 {
                     var focusedControl = Keyboard.FocusedElement as Control;
+                    Log($"[HOOK] vkCode={vkCode}, focusedControl={focusedControl?.GetType().Name}, formControls.Count={formControls.Count}");
+                    if (focusedControl != null)
+                    {
+                        for (int i = 0; i < formControls.Count; i++)
+                        {
+                            Log($"[HOOK]   formControls[{i}]={formControls[i].GetType().Name}, refEquals={ReferenceEquals(focusedControl, formControls[i])}, hashFC={focusedControl.GetHashCode()}, hashFCi={formControls[i].GetHashCode()}");
+                        }
+                        Log($"[HOOK] Contains={formControls.Contains(focusedControl)}");
+                    }
 
                     // Логика Tab (работает глобально для всех форм)
                     // if ((focusedControl == null || !formControls.Contains(focusedControl)) && vkCode == 9)
@@ -1341,7 +1409,7 @@ namespace DollOverlay
 
                     if (focusedControl != null && formControls.Contains(focusedControl))
                     {
-                        // 1. Обработка COMBOBOX (только для экрана редактирования)
+                        Log($"[HOOK] INSIDE - processing key for {focusedControl.GetType().Name}");
                         if (focusedControl is ComboBox comboBox)
                         {
                             if (vkCode == 38) // Вверх
@@ -1520,8 +1588,15 @@ namespace DollOverlay
         {
             var controls = new List<Control>();
 
+            // 0. ПРИОРИТЕТ 0: Настройки (высший — перекрывает всё)
+            if (_settingsContentPanel != null && _settingsContentPanel.Visibility == Visibility.Visible)
+            {
+                if (_fontSizeTextBox != null) controls.Add(_fontSizeTextBox);
+                if (_columnSpacingTextBox != null) controls.Add(_columnSpacingTextBox);
+                if (_rowSpacingTextBox != null) controls.Add(_rowSpacingTextBox);
+            }
             // 1. ПРИОРИТЕТ 1: Редактирование замка (проверяем первым)
-            if (EditCastleScroll.Visibility == Visibility.Visible)
+            else if (EditCastleScroll.Visibility == Visibility.Visible)
             {
                 if (FillingTimeTextBox != null) controls.Add(FillingTimeTextBox);
                 if (FillingDateComboBox != null) controls.Add(FillingDateComboBox);
@@ -1587,7 +1662,9 @@ namespace DollOverlay
 
         private void FocusAndSelect(Control control)
         {
+            Log($"[FOCUS] FocusAndSelect on {control?.GetType().Name} - {control?.Name}");
             var allControls = GetActiveInputControls();
+            Log($"[FOCUS] activeControls count={allControls.Count}");
             foreach (var c in allControls)
             {
                 FocusHelper.SetIsOverlayFocused(c, false);
@@ -1602,6 +1679,7 @@ namespace DollOverlay
             {
                 textBox.SelectAll();
             }
+            Log($"[FOCUS] Keyboard.FocusedElement={Keyboard.FocusedElement?.GetType().Name}");
         }
 
         private void HandleTabNavigation(Control currentControl, bool isReverse = false)
@@ -1628,7 +1706,7 @@ namespace DollOverlay
                 // Проверяем видимость формы редактирования
                 if (EditCastleScroll == null || EditCastleScroll.Visibility != Visibility.Visible)
                 {
-                    Debug.WriteLine("Форма редактирования не видима");
+                    App.Logger.Debug("Форма редактирования не видима");
                     return controls;
                 }
 
@@ -1668,7 +1746,7 @@ namespace DollOverlay
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Ошибка при получении контролов: {ex.Message}");
+                App.Logger.Error(ex, "Ошибка при получении контролов");
             }
 
             return controls;
@@ -1982,75 +2060,112 @@ namespace DollOverlay
         {
             try
             {
-                var settings = new WindowSettings
+               var settings = new WindowSettings
                 {
                     Top = this.Top,
                     Left = this.Left,
                     Height = IsContentCollapsed ? _expandedHeight : this.Height,
                     Width = this.Width,
                     SelectedTableId = _selectedTableId,
-                    IsBackgroundOpaque = IsLocked
+                    IsBackgroundOpaque = IsLocked,
+                    ColumnScale = _columnScale,
+                    LevelButtonFontSize = _levelButtonFontSize,
+                    FontSize = CastlesDataGrid.FontSize,
+                    ColumnSpacing = GetColumnSpacingFromGrid(),
+                    RowSpacing = _loadedRowSpacing,
+                    EditCastleRowSpacing = _editCastleRowSpacing,
+                    StatusIndicatorShape = _statusIndicatorShape,
+                    UseColonFormat = _useColonFormat
                 };
 
                 var json = JsonSerializer.Serialize(settings);
                 File.WriteAllText(SettingsFileName, json);
             }
             catch (Exception ex)
-            {
-                // Игнорируем ошибки сохранения, так как это не критично для функционала
-            }
+             {
+                 App.Logger.Error(ex, "Ошибка сохранения настроек окна");
+             }
         }
 
         private void SaveColumnOrder()
-        {
-            try
-            {
-                // Создаем словарь для хранения порядка: "ИмяСвойства" -> Позиция
-                var columnOrder = new Dictionary<string, int>();
+          {
+              if (_isRestoring) return;
 
-                foreach (var column in CastlesDataGrid.Columns)
-                {
-                    // Используем SortMemberPath как уникальный ключ колонки
-                    if (!string.IsNullOrEmpty(column.SortMemberPath))
-                    {
-                        columnOrder[column.SortMemberPath] = column.DisplayIndex;
-                    }
-                }
+              try
+              {
+                  // Сохраняем и порядок, и ширину: SortMemberPath -> (DisplayIndex, Width)
+                 var columnData = new Dictionary<string, double[]>();
 
-                var json = JsonSerializer.Serialize(columnOrder);
-                File.WriteAllText(ColumnOrderFileName, json);
-            }
-            catch (Exception ex)
-            {
-                // Игнорируем ошибки, т.к. это не критично для работы
-            }
-        }
+                 foreach (var column in CastlesDataGrid.Columns)
+                 {
+                     if (!string.IsNullOrEmpty(column.SortMemberPath))
+                     {
+                         double width = column.Width.IsAbsolute ? column.Width.Value : column.ActualWidth;
+                         if (width < 1) width = column.MinWidth;
+                         columnData[column.SortMemberPath] = new[] { (double)column.DisplayIndex, width };
+                     }
+                 }
 
-        private void LoadColumnOrder()
+                 var json = JsonSerializer.Serialize(columnData);
+                 File.WriteAllText(ColumnOrderFileName, json);
+             }
+             catch (Exception ex)
+             {
+                 // Игнорируем ошибки, т.к. это не критично для работы
+             }
+         }
+
+          private void OnColumnResizeMouseUp(object sender, MouseButtonEventArgs e)
+          {
+              if (!_isRestoring)
+                  SaveColumnOrder();
+          }
+
+          private void LoadColumnOrder()
         {
             try
             {
                 if (!File.Exists(ColumnOrderFileName)) return;
 
                 var json = File.ReadAllText(ColumnOrderFileName);
-                var columnOrder = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+                var columnData = JsonSerializer.Deserialize<Dictionary<string, double[]>>(json);
 
-                if (columnOrder == null) return;
+                if (columnData == null)
+                {
+                    // Fallback: try old format (just display index)
+                    var oldData = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+                    if (oldData != null)
+                    {
+                        foreach (var column in CastlesDataGrid.Columns)
+                        {
+                            if (!string.IsNullOrEmpty(column.SortMemberPath) &&
+                                oldData.TryGetValue(column.SortMemberPath, out int displayIndex))
+                            {
+                                column.DisplayIndex = displayIndex;
+                            }
+                        }
+                    }
+                    return;
+                }
 
                 foreach (var column in CastlesDataGrid.Columns)
                 {
-                    // Ищем в сохраненных настройках колонку с таким же ключом (SortMemberPath)
-                    if (!string.IsNullOrEmpty(column.SortMemberPath) && 
-                        columnOrder.TryGetValue(column.SortMemberPath, out int displayIndex))
+                    if (!string.IsNullOrEmpty(column.SortMemberPath) &&
+                        columnData.TryGetValue(column.SortMemberPath, out double[] data))
                     {
-                        column.DisplayIndex = displayIndex;
+                        if (data.Length >= 1)
+                            column.DisplayIndex = (int)data[0];
+                        if (data.Length >= 2 && data[1] > 0)
+                            column.Width = new DataGridLength(data[1]);
                     }
                 }
             }
             catch (Exception ex)
-            {
-                // Если файл поврежден или что-то пошло не так, просто используем порядок по умолчанию
-            }
+              {
+                  App.Logger.Error(ex, "Повреждён файл порядка колонок, удаляю: {FilePath}", ColumnOrderFileName);
+                  try { File.Delete(ColumnOrderFileName); } catch { }
+                  // Если файл поврежден или что-то пошло не так, просто используем порядок по умолчанию
+              }
         }
 
         private void ClearFormFields()
@@ -2076,13 +2191,31 @@ namespace DollOverlay
                         this.Width = settings.Width;
                         _selectedTableId = settings.SelectedTableId;
                         IsLocked = settings.IsBackgroundOpaque;
+                        _columnScale = settings.ColumnScale;
+                        if (_columnScale < 0.5 || _columnScale > 2.0) _columnScale = 1.0;
+                        _levelButtonFontSize = settings.LevelButtonFontSize;
+                        if (_levelButtonFontSize < 8 || _levelButtonFontSize > 32) _levelButtonFontSize = 14.0;
+                        _loadedFontSize = settings.FontSize;
+                        if (_loadedFontSize < 8 || _loadedFontSize > 48) _loadedFontSize = 16.0;
+                        _loadedColumnSpacing = settings.ColumnSpacing;
+                        if (_loadedColumnSpacing < 0 || _loadedColumnSpacing > 50) _loadedColumnSpacing = 10.0;
+                        _loadedRowSpacing = settings.RowSpacing;
+                        if (_loadedRowSpacing < 10 || _loadedRowSpacing > 100) _loadedRowSpacing = 30.0;
+                  _editCastleRowSpacing = settings.EditCastleRowSpacing;
+                        if (_editCastleRowSpacing < 2 || _editCastleRowSpacing > 30) _editCastleRowSpacing = 8.0;
+                        _statusIndicatorShape = settings.StatusIndicatorShape;
+                        if (_statusIndicatorShape < StatusIndicatorShape.RoundedSquare || _statusIndicatorShape > StatusIndicatorShape.VerticalBar)
+                            _statusIndicatorShape = StatusIndicatorShape.RoundedSquare;
+                        _useColonFormat = settings.UseColonFormat;
                     }
                 }
                 catch (Exception ex)
-                {
-                    this.Height = 500;
-                    this.Width = 400;
-                }
+                 {
+                     App.Logger.Error(ex, "Повреждён файл настроек, удаляю: {FilePath}", SettingsFileName);
+                     try { File.Delete(SettingsFileName); } catch { }
+                     this.Height = 500;
+                     this.Width = 400;
+                 }
             }
             else
             {
@@ -2217,7 +2350,7 @@ namespace DollOverlay
             catch (Exception ex)
             {
                 // Логируем ошибку (или просто выводим в Debug), но НЕ роняем таймер
-                Debug.WriteLine($"Ошибка в таймере: {ex.Message}");
+                App.Logger.Error(ex, "Ошибка в таймере");
             }
         }
 
@@ -2373,6 +2506,7 @@ namespace DollOverlay
                     TablesPanel.Visibility = Visibility.Collapsed;
                     TablesScrollViewer.Visibility = Visibility.Visible;
                     EditCastleScroll.Visibility = Visibility.Collapsed;
+                    TimeButtonsPanel.Visibility = Visibility.Visible;
                 }
             }
         }
@@ -2520,6 +2654,7 @@ namespace DollOverlay
             TablesPanel.Visibility = Visibility.Collapsed;
             TablesScrollViewer.Visibility = Visibility.Visible;
             EditCastleScroll.Visibility = Visibility.Collapsed;
+            TimeButtonsPanel.Visibility = Visibility.Visible;
             _selectedCastle = null;
         }
 
@@ -2718,9 +2853,10 @@ namespace DollOverlay
                 }
             }
 
-            // 4. Объединяем группы обратно в один список и обновляем коллекцию для отображения
+          // 4. Объединяем группы обратно в один список и обновляем коллекцию для отображения
             var finalSortedList = castlesWithTime.Concat(castlesReadyToFill).Concat(castlesNotAvailable);
 
+            Castle.UseColonFormat = _useColonFormat;
             _castlesObservable.Clear();
             foreach (var castle in finalSortedList)
             {
@@ -2728,9 +2864,10 @@ namespace DollOverlay
             }
         }
 
-        private void UpdateDataGrid(WebSocketDataUpdate? update)
+      private void UpdateDataGrid(WebSocketDataUpdate? update)
         {
             if (update?.data?.castleData == null) return;
+            Castle.UseColonFormat = _useColonFormat;
 
             Dispatcher.Invoke(() =>
             {
@@ -2897,7 +3034,7 @@ namespace DollOverlay
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Ошибка WS: {ex.Message}");
+                    App.Logger.Error(ex, "Ошибка WS");
                 }
                 finally
                 {
@@ -3062,7 +3199,755 @@ namespace DollOverlay
                 }
             }
         }
+
+        private static void Log(string msg)
+         {
+             App.Logger.Information(msg);
+         }
+
+   private TextBox _fontSizeTextBox;
+    private TextBox _columnSpacingTextBox;
+    private TextBox _rowSpacingTextBox;
+    private Grid _settingsContentPanel = null;
+   private ComboBox _statusShapeComboBox;
+    private ComboBox _formatComboBox;
+   private StatusIndicatorShape _statusIndicatorShape = StatusIndicatorShape.RoundedSquare;
+    private bool _useColonFormat = false;
+    private double _savedFontSize;
+    private double _savedColumnSpacing;
+    private double _savedRowSpacing;
+    private double _savedLevelButtonFontSize;
+    private double _savedEditCastleRowSpacing;
+    private bool _isRestoring;
+      private double _columnScale = 1.0;
+    private Slider _columnScaleSlider;
+    private double _levelButtonFontSize = 14.0;
+    private double _editCastleRowSpacing = 8.0;
+    private TextBox _levelFontSizeTextBox;
+    private TextBox _editCastleRowSpacingTextBox;
+    private double _loadedFontSize;
+    private double _loadedColumnSpacing;
+    private double _loadedRowSpacing;
+
+    private const double ROW_HEIGHT_FONT_COEFFICIENT = 0.75;
+
+    private double CalculateRowHeight(double fontSize, double rowSpacing)
+    {
+        return fontSize * ROW_HEIGHT_FONT_COEFFICIENT + rowSpacing;
     }
+
+    // Базовые ширины столбцов (при scale=1.0)
+    private readonly Dictionary<string, double> _baseColumnWidths = new Dictionary<string, double>
+    {
+        { "StatusColor", 10 },
+        { "Замок", 120 },
+        { "Лить", 70 },      // MinWidth для Auto-столбцов — используем как базу
+        { "Через", 70 },
+        { "СВ", 50 },
+        { "Спад", 70 },
+        { "Комментарий", 150 },
+        { "Клан", 70 }
+    };
+
+    private double GetColumnSpacingFromGrid()
+    {
+        // Read margin from grid-level CellStyle
+        if (CastlesDataGrid.CellStyle != null)
+        {
+            var marginSetter = CastlesDataGrid.CellStyle.Setters.OfType<Setter>()
+                .FirstOrDefault(s => s.Property == FrameworkElement.MarginProperty);
+            if (marginSetter?.Value is Thickness margin)
+                return margin.Left * 2; // we store half-margin on each side
+        }
+        return 7.0; // default
+    }
+
+    private void SaveCurrentSettings()
+    {
+        _savedFontSize = CastlesDataGrid.FontSize;
+        if (_columnSpacingTextBox != null && double.TryParse(_columnSpacingTextBox.Text, out double cs))
+            _savedColumnSpacing = cs;
+        else
+            _savedColumnSpacing = GetColumnSpacingFromGrid();
+        _savedRowSpacing = _rowSpacingTextBox != null ? double.Parse(_rowSpacingTextBox.Text) : 30.0;
+        _savedLevelButtonFontSize = _levelButtonFontSize;
+        if (_editCastleRowSpacingTextBox != null && double.TryParse(_editCastleRowSpacingTextBox.Text, out double ecs))
+            _savedEditCastleRowSpacing = ecs;
+        else
+            _savedEditCastleRowSpacing = _editCastleRowSpacing;
+    }
+
+private void ApplySettings()
+    {
+        if (_isRestoring) return;
+        if (double.TryParse(_fontSizeTextBox?.Text, out double fontSize) && fontSize >= 8 && fontSize <= 48)
+        {
+            CastlesDataGrid.FontSize = fontSize;
+            ApplyEditCastleFontSize(fontSize);
+        }
+        if (double.TryParse(_columnSpacingTextBox?.Text, out double colSpacing) && colSpacing >= 0 && colSpacing <= 50)
+        {
+            ApplyColumnSpacing(colSpacing);
+        }
+        if (double.TryParse(_rowSpacingTextBox?.Text, out double rowSpacing) && rowSpacing >= 10 && rowSpacing <= 100)
+        {
+            _loadedRowSpacing = rowSpacing;
+            CastlesDataGrid.RowHeight = CalculateRowHeight(CastlesDataGrid.FontSize, rowSpacing);
+            ApplyEditCastleRowSpacing(rowSpacing);
+        }
+        if (double.TryParse(_levelFontSizeTextBox?.Text, out double levelFontSize) && levelFontSize >= 8 && levelFontSize <= 32)
+        {
+            ApplyLevelButtonFontSize(levelFontSize);
+        }
+        if (double.TryParse(_editCastleRowSpacingTextBox?.Text, out double editCastleSpacing) && editCastleSpacing >= 2 && editCastleSpacing <= 30)
+        {
+            _editCastleRowSpacing = editCastleSpacing;
+           ApplyEditCastleRowSpacing(editCastleSpacing);
+        }
+        SaveWindowPosition();
+    }
+
+    private void RestoreSavedSettings()
+    {
+        _isRestoring = true;
+        CastlesDataGrid.FontSize = _savedFontSize;
+        ApplyEditCastleFontSize(_savedFontSize);
+        ApplyColumnSpacing(_savedColumnSpacing);
+        CastlesDataGrid.RowHeight = CalculateRowHeight(CastlesDataGrid.FontSize, _savedRowSpacing);
+        ApplyEditCastleRowSpacing(_savedRowSpacing);
+        ApplyLevelButtonFontSize(_savedLevelButtonFontSize);
+        ApplyEditCastleRowSpacing(_savedEditCastleRowSpacing);
+        _isRestoring = false;
+    }
+
+    private void ApplyColumnSpacing(double spacing)
+    {
+        // Use Margin on DataGridCell to create visual gap between columns
+        // Margin on the cell creates space between adjacent cells
+        double margin = spacing;
+        var newMargin = new Thickness(margin / 2, 0, margin / 2, 0);
+        Style? baseStyle = CastlesDataGrid.CellStyle;
+        var cellStyle = baseStyle != null
+            ? new Style(typeof(DataGridCell), baseStyle)
+            : new Style(typeof(DataGridCell));
+        cellStyle.Setters.Add(new Setter(FrameworkElement.MarginProperty, newMargin));
+        CastlesDataGrid.CellStyle = cellStyle;
+        CastlesDataGrid.InvalidateVisual();
+    }
+
+    private void ApplyColumnScale(double scale)
+    {
+        _columnScale = scale;
+        if (CastlesDataGrid.Columns.Count == 0) return;
+
+     // Фиксированные столбцы: StatusColor(0), Замок(1)
+        // Auto столбцы: Лить(2), Через(3), СВ(4), Спад(5), Комментарий(6), Клан(7)
+        var baseWidths = new[] { 10.0, 120.0, 70.0, 70.0, 50.0, 70.0, 150.0, 70.0 };
+        for (int i = 0; i < CastlesDataGrid.Columns.Count && i < baseWidths.Length; i++)
+        {
+            var col = CastlesDataGrid.Columns[i];
+            double newWidth = baseWidths[i] * scale;
+            col.Width = new DataGridLength(newWidth);
+            col.MinWidth = Math.Max(20, newWidth * 0.5);
+        }
+    }
+
+    private void ApplyLevelButtonFontSize(double fontSize)
+    {
+        _levelButtonFontSize = fontSize;
+        if (TimeButtonsPanel == null) return;
+        foreach (var child in TimeButtonsPanel.Children)
+        {
+            if (child is Button btn && btn.Tag != null)
+            {
+                btn.FontSize = fontSize;
+            }
+        }
+    }
+
+   private void ApplyLoadedSettings()
+    {
+        // Применяем загруженные настройки к гриду
+        CastlesDataGrid.FontSize = _loadedFontSize;
+        ApplyEditCastleFontSize(_loadedFontSize);
+        CastlesDataGrid.RowHeight = CalculateRowHeight(_loadedFontSize, _loadedRowSpacing);
+        if (_fontSizeTextBox != null) _fontSizeTextBox.Text = _loadedFontSize.ToString();
+        if (_columnSpacingTextBox != null) _columnSpacingTextBox.Text = _loadedColumnSpacing.ToString();
+        if (_rowSpacingTextBox != null) _rowSpacingTextBox.Text = _loadedRowSpacing.ToString();
+        if (_levelFontSizeTextBox != null) _levelFontSizeTextBox.Text = _levelButtonFontSize.ToString();
+        if (_editCastleRowSpacingTextBox != null) _editCastleRowSpacingTextBox.Text = _editCastleRowSpacing.ToString();
+        ApplyEditCastleRowSpacing(_editCastleRowSpacing);
+        ApplyColumnSpacing(_loadedColumnSpacing);
+        var style = new Style(typeof(DataGridCell));
+        style.Setters.Add(new Setter(DataGridCell.PaddingProperty, new Thickness(_loadedColumnSpacing / 2, 0, _loadedColumnSpacing / 2, 0)));
+        CastlesDataGrid.Resources[typeof(DataGridCell)] = style;
+
+        // Применяем остальные настройки
+        ApplyLevelButtonFontSize(_levelButtonFontSize);
+        ApplyColumnScale(_columnScale);
+        RestoreStatusShapeInSettings();
+        RestoreTimeFormatInSettings();
+    }
+
+    private void ApplyEditCastleFontSize(double fontSize)
+    {
+        if (EditCastleForm == null) return;
+        foreach (var child in EditCastleForm.Children)
+        {
+            if (child is DependencyObject dep)
+                ApplyFontSizeToElement(dep, fontSize);
+        }
+    }
+
+    private void ApplyFontSizeToElement(DependencyObject element, double fontSize)
+    {
+        if (element is TextBlock tb) tb.FontSize = fontSize;
+        else if (element is TextBox tx) tx.FontSize = fontSize;
+        else if (element is ComboBox cb) cb.FontSize = fontSize;
+        else if (element is HeaderedContentControl hcc) hcc.FontSize = fontSize;
+
+        // Рекурсивно для контейнеров
+        if (element is Panel panel)
+        {
+            foreach (UIElement child in panel.Children)
+            {
+                ApplyFontSizeToElement(child, fontSize);
+            }
+        }
+        else if (element is Decorator decorator && decorator.Child is DependencyObject child)
+        {
+            ApplyFontSizeToElement(child, fontSize);
+        }
+        else if (element is ContentControl cc && cc.Content is DependencyObject content)
+        {
+            ApplyFontSizeToElement(content, fontSize);
+        }
+    }
+
+    private void ApplyEditCastleRowSpacing(double rowSpacing)
+    {
+        if (EditCastleForm == null) return;
+        // Каждая строка формы — это Grid с Margin="0,5" внутри вложенного StackPanel
+        // Меняем Margin пропорционально rowSpacing (базовое значение 20 → Margin "0,5")
+        double topMargin = Math.Max(2, rowSpacing * 0.25);
+        var newMargin = new Thickness(0, topMargin, 0, topMargin);
+        SetGridMarginsRecursive(EditCastleForm, newMargin);
+    }
+
+    private void SetGridMarginsRecursive(DependencyObject parent, Thickness margin)
+    {
+        if (parent is Grid grid)
+        {
+            grid.Margin = margin;
+        }
+        if (parent is Panel panel)
+        {
+            foreach (UIElement child in panel.Children)
+            {
+                SetGridMarginsRecursive(child, margin);
+            }
+        }
+        else if (parent is Decorator decorator && decorator.Child is DependencyObject child)
+        {
+            SetGridMarginsRecursive(child, margin);
+        }
+        else if (parent is ContentControl cc && cc.Content is DependencyObject content)
+        {
+            SetGridMarginsRecursive(content, margin);
+        }
+    }
+
+    private void AdjustValue(TextBox textBox, double delta, double min, double max)
+    {
+        if (double.TryParse(textBox.Text, out double current))
+        {
+            double newValue = Math.Round(current + delta, 1);
+            newValue = Math.Max(min, Math.Min(max, newValue));
+            textBox.Text = newValue.ToString();
+        }
+        else
+        {
+            textBox.Text = min.ToString();
+        }
+        ApplySettings();
+    }
+
+    private StackPanel CreateStepperRow(string label, TextBox textBox, double delta, double min, double max)
+    {
+        var minusBtn = new Button
+        {
+            Content = "−",
+            Width = 28,
+            Height = 28,
+            FontSize = 16,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(120, 60, 70, 100)),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 0, 4, 0),
+            Cursor = Cursors.Hand
+        };
+        minusBtn.Click += (s, e) => AdjustValue(textBox, -delta, min, max);
+
+        var plusBtn = new Button
+        {
+            Content = "+",
+            Width = 28,
+            Height = 28,
+            FontSize = 16,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(120, 60, 70, 100)),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            Margin = new Thickness(4, 0, 0, 0),
+            Cursor = Cursors.Hand
+        };
+        plusBtn.Click += (s, e) => AdjustValue(textBox, delta, min, max);
+
+        textBox.Width = 60;
+        textBox.Margin = new Thickness(0);
+        textBox.VerticalContentAlignment = VerticalAlignment.Center;
+
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 5, 0, 0),
+            Children =
+            {
+                new TextBlock { Text = label, Foreground = Brushes.White, Width = 220, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) },
+                minusBtn,
+                textBox,
+                plusBtn
+            }
+        };
+    }
+
+    private StackPanel CreateColumnScaleSlider()
+    {
+        var scaleLabel = new TextBlock
+        {
+            Text = $"{(int)(_columnScale * 100)}%",
+            Foreground = Brushes.White,
+            FontSize = 13,
+            Width = 40,
+            TextAlignment = TextAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        _columnScaleSlider = new Slider
+        {
+            Minimum = 0.5,
+            Maximum = 2.0,
+            Value = _columnScale,
+            Width = 180,
+            VerticalAlignment = VerticalAlignment.Center,
+            TickFrequency = 0.1,
+            IsSnapToTickEnabled = false,
+            Foreground = Brushes.White
+        };
+
+        var slider = _columnScaleSlider;
+
+        slider.ValueChanged += (s, e) =>
+        {
+            double scale = Math.Round(slider.Value, 2);
+            scaleLabel.Text = $"{(int)(scale * 100)}%";
+            ApplyColumnScale(scale);
+        };
+
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Children =
+            {
+                new TextBlock { Text = "50%", Foreground = Brushes.Gray, FontSize = 10, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) },
+                slider,
+                new TextBlock { Text = "200%", Foreground = Brushes.Gray, FontSize = 10, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) },
+                scaleLabel
+            }
+        };
+    }
+
+    private void CreateSettingsPanel()
+    {
+        _fontSizeTextBox = new TextBox { Text = "16", HorizontalContentAlignment = HorizontalAlignment.Center };
+        _fontSizeTextBox.GotFocus += TextBox_GotFocus;
+        _fontSizeTextBox.PreviewMouseDown += SettingsTextBox_PreviewMouseDown;
+        _fontSizeTextBox.TextChanged += SettingsTextBox_TextChanged;
+
+        _columnSpacingTextBox = new TextBox { Text = "7", HorizontalContentAlignment = HorizontalAlignment.Center };
+        _columnSpacingTextBox.GotFocus += TextBox_GotFocus;
+        _columnSpacingTextBox.PreviewMouseDown += SettingsTextBox_PreviewMouseDown;
+        _columnSpacingTextBox.TextChanged += SettingsTextBox_TextChanged;
+
+        _rowSpacingTextBox = new TextBox { Text = "30", HorizontalContentAlignment = HorizontalAlignment.Center };
+        _rowSpacingTextBox.GotFocus += TextBox_GotFocus;
+        _rowSpacingTextBox.PreviewMouseDown += SettingsTextBox_PreviewMouseDown;
+        _rowSpacingTextBox.TextChanged += SettingsTextBox_TextChanged;
+
+        _levelFontSizeTextBox = new TextBox { Text = "14", HorizontalContentAlignment = HorizontalAlignment.Center };
+        _levelFontSizeTextBox.GotFocus += TextBox_GotFocus;
+        _levelFontSizeTextBox.PreviewMouseDown += SettingsTextBox_PreviewMouseDown;
+        _levelFontSizeTextBox.TextChanged += SettingsTextBox_TextChanged;
+
+        _editCastleRowSpacingTextBox = new TextBox { Text = "8", HorizontalContentAlignment = HorizontalAlignment.Center };
+        _editCastleRowSpacingTextBox.GotFocus += TextBox_GotFocus;
+        _editCastleRowSpacingTextBox.PreviewMouseDown += SettingsTextBox_PreviewMouseDown;
+        _editCastleRowSpacingTextBox.TextChanged += SettingsTextBox_TextChanged;
+
+        var applyButton = new Button
+        {
+            Content = "Применить",
+            Width = 100,
+            Height = 32,
+            Margin = new Thickness(0, 15, 0, 0),
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(180, 40, 120, 60)),
+            BorderThickness = new Thickness(0),
+            Cursor = Cursors.Hand
+        };
+        applyButton.Click += (s, e) => CloseSettingsPanel();
+
+        var resetButton = new Button
+        {
+            Content = "Сбросить",
+            Width = 100,
+            Height = 32,
+            Margin = new Thickness(0, 8, 0, 0),
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(180, 180, 50, 50)),
+            BorderThickness = new Thickness(0),
+            Cursor = Cursors.Hand
+        };
+        resetButton.Click += (s, e) =>
+        {
+            _isRestoring = true;
+            _fontSizeTextBox.Text = _savedFontSize.ToString();
+            _columnSpacingTextBox.Text = _savedColumnSpacing.ToString();
+            _rowSpacingTextBox.Text = _savedRowSpacing.ToString();
+            _isRestoring = false;
+            _columnScale = 1.0;
+            if (_columnScaleSlider != null) _columnScaleSlider.Value = 1.0;
+            if (_columnSpacingTextBox != null) _columnSpacingTextBox.Text = "7";
+            _levelButtonFontSize = 14.0;
+            _levelFontSizeTextBox.Text = "14";
+            _editCastleRowSpacing = 8.0;
+            if (_editCastleRowSpacingTextBox != null) _editCastleRowSpacingTextBox.Text = "8";
+            RestoreSavedSettings();
+            ApplyColumnScale(1.0);
+            ApplyLevelButtonFontSize(14.0);
+        };
+
+        var backButton = new Button
+        {
+            Content = "Отмена",
+            Width = 100,
+            Height = 32,
+            Margin = new Thickness(0, 8, 0, 0),
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(120, 80, 80, 100)),
+            BorderThickness = new Thickness(0),
+            Cursor = Cursors.Hand
+        };
+        backButton.Click += (s, e) =>
+        {
+            RestoreSavedSettings();
+            CloseSettingsPanel();
+        };
+
+        // Контент панели настроек
+        var contentPanel = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                new TextBlock { Text = "Настройки", FontSize = 18, FontWeight = FontWeights.Bold, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 15) },
+                CreateStepperRow("Размер шрифта:", _fontSizeTextBox, 1, 8, 48),
+                CreateStepperRow("Расстояние между столбцами:", _columnSpacingTextBox, 1, 0, 50),
+                CreateStepperRow("Расстояние между рядами:", _rowSpacingTextBox, 1, 10, 100),
+
+                // Слайдер масштаба столбцов
+                new TextBlock { Text = "Масштаб столбцов:", Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 12, 0, 4) },
+                CreateColumnScaleSlider(),
+
+          CreateStepperRow("Шрифт кнопок уровней:", _levelFontSizeTextBox, 1, 8, 32),
+                CreateStepperRow("Отступы в форме замка:", _editCastleRowSpacingTextBox, 1, 2, 30),
+
+                // Выбор формы индикатора статуса
+                new TextBlock { Text = "Форма индикатора статуса:", Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 12, 0, 4) },
+                CreateStatusShapeComboBox(),
+
+                // Выбор формата отображения времени
+                new TextBlock { Text = "Формат времени:", Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 12, 0, 4) },
+                CreateFormatComboBox(),
+
+                applyButton,
+                resetButton,
+                backButton
+            }
+        };
+
+        // Внешний Border — полупрозрачный тёмный фон на всё окно
+        var backdrop = new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Background = new SolidColorBrush(Color.FromArgb(180, 10, 10, 20)),
+        };
+
+        // Внутренний контейнер — центрированный блок с закруглёнными углами
+        var settingsCard = new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            CornerRadius = new CornerRadius(12),
+            Background = new SolidColorBrush(Color.FromArgb(220, 20, 25, 40)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(80, 100, 140, 200)),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(25, 20, 25, 20),
+            Child = contentPanel
+        };
+
+        // Добавляем settingsCard в backdrop
+        var backdropGrid = new Grid();
+        backdropGrid.Children.Add(settingsCard);
+        backdrop.Child = backdropGrid;
+
+        _settingsContentPanel = new Grid
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Visibility = Visibility.Collapsed,
+            Children = { backdrop }
+        };
+
+        // Добавляем в КОРНЕВОЙ Grid (поверх MainFrame и всего остального)
+        // Корневой Grid — это Content окна
+        if (this.Content is Grid rootGrid)
+        {
+            rootGrid.Children.Add(_settingsContentPanel);
+            Panel.SetZIndex(_settingsContentPanel, 500);
+        }
+        // Fallback: если Content не Grid, оборачиваем
+        else
+        {
+            var wrapper = new Grid();
+            var originalContent = this.Content;
+            this.Content = null;
+            wrapper.Children.Add(originalContent as UIElement);
+            wrapper.Children.Add(_settingsContentPanel);
+            Panel.SetZIndex(_settingsContentPanel, 500);
+            this.Content = wrapper;
+        }
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Log($"[SETTINGS] Button clicked");
+            if (_settingsContentPanel == null)
+            {
+                Log("[SETTINGS] _settingsContentPanel is null!");
+                return;
+            }
+
+            if (_settingsContentPanel.Visibility == Visibility.Visible)
+            {
+                // Закрываем настройки
+                _settingsContentPanel.Visibility = Visibility.Collapsed;
+                Log("[SETTINGS] Panel hidden");
+                return;
+            }
+
+            // Открываем настройки — показываем поверх всего (MainContent не скрываем)
+            SaveCurrentSettings();
+            _isRestoring = true;
+            _fontSizeTextBox.Text = _savedFontSize.ToString();
+            _columnSpacingTextBox.Text = _savedColumnSpacing.ToString();
+            _rowSpacingTextBox.Text = _savedRowSpacing.ToString();
+            _levelFontSizeTextBox.Text = _savedLevelButtonFontSize.ToString();
+            _isRestoring = false;
+          if (_columnScaleSlider != null) _columnScaleSlider.Value = _columnScale;
+            RestoreStatusShapeInSettings();
+            _settingsContentPanel.Visibility = Visibility.Visible;
+            Log("[SETTINGS] Panel shown");
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                FocusAndSelect(_fontSizeTextBox);
+            }), DispatcherPriority.Input);
+        }
+        catch (Exception ex)
+        {
+            Log($"[SETTINGS] ERROR: {ex.Message}");
+        }
+    }
+
+    private void SettingsTextBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        Log($"[SETTINGS] PreviewMouseDown on {sender?.GetType().Name}");
+        if (sender is Control control)
+        {
+            FocusAndSelect(control);
+            e.Handled = true;
+        }
+    }
+
+    private void SettingsTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        ApplySettings();
+    }
+
+   private void CloseSettingsPanel()
+    {
+        if (_settingsContentPanel != null)
+            _settingsContentPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private StackPanel CreateStatusShapeComboBox()
+    {
+        var comboBox = new ComboBox
+        {
+            Width = 200,
+            Height = 32,
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(180, 60, 70, 90)),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 4, 0, 4),
+            FontSize = 13
+        };
+        _statusShapeComboBox = comboBox;
+
+        // Скруглённый квадрат
+        var roundedSquarePanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Left };
+        var roundedSquareIcon = new Border
+        {
+            Width = 16, Height = 16,
+            Background = Brushes.DeepSkyBlue,
+            CornerRadius = new CornerRadius(4),
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        roundedSquarePanel.Children.Add(roundedSquareIcon);
+        roundedSquarePanel.Children.Add(new TextBlock { Text = "Скруглённый квадрат", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center });
+        comboBox.Items.Add(new ComboBoxItem { Content = roundedSquarePanel, Tag = StatusIndicatorShape.RoundedSquare });
+
+        // Кружок
+        var circlePanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Left };
+        var circleIcon = new Border
+        {
+            Width = 16, Height = 16,
+            Background = Brushes.DeepSkyBlue,
+            CornerRadius = new CornerRadius(8),
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        circlePanel.Children.Add(circleIcon);
+        circlePanel.Children.Add(new TextBlock { Text = "Кружок", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center });
+        comboBox.Items.Add(new ComboBoxItem { Content = circlePanel, Tag = StatusIndicatorShape.Circle });
+
+        // Вертикальная полоска
+        var vbarPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Left };
+        var vbarIcon = new Border
+        {
+            Width = 2, Height = 16,
+            Background = Brushes.DeepSkyBlue,
+            CornerRadius = new CornerRadius(1),
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        vbarPanel.Children.Add(vbarIcon);
+        vbarPanel.Children.Add(new TextBlock { Text = "Вертикальная полоска", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center });
+        comboBox.Items.Add(new ComboBoxItem { Content = vbarPanel, Tag = StatusIndicatorShape.VerticalBar });
+
+        // Установим текущее значение
+        comboBox.SelectedItem = comboBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (StatusIndicatorShape)i.Tag == _statusIndicatorShape);
+
+        comboBox.SelectionChanged += (s, e) =>
+        {
+            if (comboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                _statusIndicatorShape = (StatusIndicatorShape)selectedItem.Tag;
+                ApplyStatusShape();
+                SaveStatusShapeToFile();
+            }
+        };
+
+        return new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Children = { comboBox }
+        };
+    }
+
+private StackPanel CreateFormatComboBox()
+    {
+        var comboBox = new ComboBox
+        {
+            Width = 200,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            SelectedIndex = _useColonFormat ? 1 : 0
+        };
+        _formatComboBox = comboBox;
+        comboBox.Items.Add(new ComboBoxItem { Content = "3ч 15м (часы:минуты)" });
+        comboBox.Items.Add(new ComboBoxItem { Content = "3:15 (ч:мм с двоеточием)" });
+
+        comboBox.SelectionChanged += (s, e) =>
+        {
+            _useColonFormat = comboBox.SelectedIndex == 1;
+            ApplyFilterAndSort();
+            SaveWindowPosition();
+        };
+
+        return new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Children = { comboBox }
+        };
+    }
+
+    private void ApplyStatusShape()
+    {
+        if (CastlesDataGrid.ItemsSource != null)
+        {
+            var items = CastlesDataGrid.ItemsSource as System.Collections.IList;
+            if (items != null)
+            {
+                CastlesDataGrid.ItemsSource = null;
+                CastlesDataGrid.ItemsSource = items;
+            }
+        }
+    }
+
+  private void SaveStatusShapeToFile()
+    {
+        SaveWindowPosition();
+    }
+
+   private void RestoreStatusShapeInSettings()
+    {
+        if (_statusShapeComboBox != null)
+        {
+            _statusShapeComboBox.SelectedItem = _statusShapeComboBox.Items.Cast<ComboBoxItem>()
+                .FirstOrDefault(i => (StatusIndicatorShape)i.Tag == _statusIndicatorShape);
+        }
+    }
+
+    private void RestoreTimeFormatInSettings()
+    {
+        if (_formatComboBox != null)
+        {
+            _formatComboBox.SelectedIndex = _useColonFormat ? 1 : 0;
+        }
+    }
+
+    } // end of MainWindow class
 
     public class InvertedBooleanToVisibilityConverter : IValueConverter
     {
@@ -3122,7 +4007,197 @@ namespace DollOverlay
             return FontWeights.Bold;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+       public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class StatusShapeToCornerRadiusConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is StatusIndicatorShape shape)
+            {
+                switch (shape)
+                {
+                    case StatusIndicatorShape.RoundedSquare:
+                        return new CornerRadius(3);
+                    case StatusIndicatorShape.Circle:
+                        return new CornerRadius(99);
+                    case StatusIndicatorShape.VerticalBar:
+                        return new CornerRadius(0);
+                    default:
+                        return new CornerRadius(3);
+                }
+            }
+            return new CornerRadius(3);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class StatusShapeConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is StatusIndicatorShape shape)
+            {
+                var param = parameter as string ?? "";
+                switch (shape)
+                {
+                    case StatusIndicatorShape.RoundedSquare:
+                        return param switch
+                        {
+                            "Width" => 20.0,
+                            "Height" => 20.0,
+                            "CornerRadius" => new CornerRadius(3),
+                            _ => new CornerRadius(3)
+                        };
+                    case StatusIndicatorShape.Circle:
+                        return param switch
+                        {
+                            "Width" => 10.0,
+                            "Height" => 10.0,
+                            "CornerRadius" => new CornerRadius(5),
+                            _ => new CornerRadius(5)
+                        };
+                         case StatusIndicatorShape.VerticalBar:
+                        return param switch
+                        {
+                            "Width" => 9.0,
+                            "Height" => 20.0,
+                            "CornerRadius" => new CornerRadius(5, 1, 1, 5),
+                            _ => new CornerRadius(5, 1, 1, 5)
+                        };
+                    default:
+                        return new CornerRadius(3);
+                }
+            }
+            return new CornerRadius(3);
+        }
+
+       public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class StatusIndicatorSizeConverter : IValueConverter
+    {
+        private static string GetSettingsPath()
+        {
+            return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
+        }
+
+        private static StatusIndicatorShape GetShape()
+        {
+            try
+            {
+                var path = GetSettingsPath();
+                if (File.Exists(path))
+                {
+                    var json = File.ReadAllText(path);
+                    var settings = JsonSerializer.Deserialize<WindowSettings>(json);
+                    return settings?.StatusIndicatorShape ?? StatusIndicatorShape.RoundedSquare;
+                }
+            }
+            catch { }
+            return StatusIndicatorShape.RoundedSquare;
+        }
+
+        private static double GetFontSize()
+        {
+            try
+            {
+                var path = GetSettingsPath();
+                if (File.Exists(path))
+                {
+                    var json = File.ReadAllText(path);
+                    var settings = JsonSerializer.Deserialize<WindowSettings>(json);
+                    return settings?.FontSize ?? 16.0;
+                }
+            }
+            catch { }
+            return 16.0;
+        }
+
+   private static double GetCellHeight()
+    {
+        try
+        {
+            var path = GetSettingsPath();
+            if (File.Exists(path))
+            {
+                var json = File.ReadAllText(path);
+                var settings = JsonSerializer.Deserialize<WindowSettings>(json);
+                var fontSize = settings?.FontSize ?? 16.0;
+                var rowSpacing = settings?.RowSpacing ?? 30.0;
+                return fontSize * 0.75 + rowSpacing;
+            }
+        }
+        catch { }
+        return 16.0 * 0.75 + 30.0;
+    }
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            var param = parameter as string ?? "";
+            var fontSize = GetFontSize();
+            var cellHeight = GetCellHeight();
+            var shape = GetShape();
+            
+            switch (shape)
+            {
+                case StatusIndicatorShape.RoundedSquare:
+                {
+                    var size = fontSize;
+                    return param switch
+                    {
+                        "Width" => size,
+                        "Height" => size,
+                        "CornerRadius" => new CornerRadius(size * 0.15),
+                        _ => size
+                    };
+                }
+                case StatusIndicatorShape.Circle:
+                {
+                    var diameter = Math.Max(4, fontSize - 4);
+                    return param switch
+                    {
+                        "Width" => diameter,
+                        "Height" => diameter,
+                        "CornerRadius" => new CornerRadius(diameter * 0.5),
+                        _ => diameter
+                    };
+                }
+               case StatusIndicatorShape.VerticalBar:
+                {
+                    var barWidth = 5.0;
+                    var barHeight = fontSize + 8;
+                 return param switch
+                  {
+                      "Width" => barWidth,
+                      "Height" => barHeight,
+                      "CornerRadius" => new CornerRadius(5, 2, 2, 5),
+                      _ => barWidth
+                  };
+                }
+                default:
+                    return param switch
+                    {
+                        "Width" => 20.0,
+                        "Height" => 20.0,
+                        "CornerRadius" => new CornerRadius(3),
+                        _ => 20.0
+                    };
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }
