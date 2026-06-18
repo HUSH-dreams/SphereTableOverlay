@@ -2327,27 +2327,26 @@ public bool IsContentCollapsed
                 // 1. Создаем копию списка для итерации, чтобы избежать конфликтов 
                 // с обновлением данных из WebSocket (CollectionModified exception)
                 List<Castle> castlesSnapshot;
-                lock (_castlesLock) // Этот объект нужно объявить (см. ниже)
+                lock (_castlesLock)
                 {
                     if (originalCastles == null) return;
                     castlesSnapshot = originalCastles.ToList();
                 }
 
                 // 2. Обновляем свойства (это вызывает пересчет WhiteTime внутри геттеров)
+                // ApplyFilterAndSort() НЕ вызываем — порядок элементов не меняется,
+                // а вычисляемые свойства (WhiteTime, StatusText, StatusColor) обновляются
+                // автоматически через INotifyPropertyChanged и XAML-биндинги.
                 foreach (var castle in castlesSnapshot)
                 {
                     castle.NotifyPropertyChanged(nameof(castle.WhiteTime));
                     castle.NotifyPropertyChanged(nameof(castle.StatusText));
                     castle.NotifyPropertyChanged(nameof(castle.StatusColor));
-                    castle.NotifyPropertyChanged(nameof(castle.RedTime)); // Тоже обновляем, раз есть в UI
+                    castle.NotifyPropertyChanged(nameof(castle.RedTime));
                 }
-
-                // 3. Применяем сортировку
-                ApplyFilterAndSort();
             }
             catch (Exception ex)
             {
-                // Логируем ошибку (или просто выводим в Debug), но НЕ роняем таймер
                 App.Logger.Error(ex, "Ошибка в таймере");
             }
         }
@@ -2895,7 +2894,14 @@ public bool IsContentCollapsed
                         existingCastleInOriginal.fillingDatetime = castleData.fillingDatetime;
                     }
 
-                    ApplyFilterAndSort();
+                    // Пересобираем таблицу только если изменился fillingDatetime — он влияет на сортировку.
+                    // Остальные поля (commentary, ownerClan, fillingLvl и т.д.) не меняют порядок строк.
+                    bool needsRebuild = existingCastleInObservable != null && 
+                        existingCastleInObservable.fillingDatetime != castleData.fillingDatetime;
+                    if (needsRebuild)
+                    {
+                        ApplyFilterAndSort();
+                    }
                 }
             });
         }
