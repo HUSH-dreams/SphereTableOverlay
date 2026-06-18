@@ -77,6 +77,7 @@ namespace DollOverlay
         public double EditCastleRowSpacing { get; set; } = 8.0;
         public StatusIndicatorShape StatusIndicatorShape { get; set; } = StatusIndicatorShape.RoundedSquare;
         public bool UseColonFormat { get; set; } = false;
+        public double TimeButtonSpacing { get; set; } = 6.0;
     }
 
     public class ButtonSettings
@@ -754,7 +755,6 @@ public string RedTime
         static extern bool SetForegroundWindow(IntPtr hWnd);
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        private DispatcherTimer _windowDiscoveryTimer = new DispatcherTimer();
 
 
         private Storyboard? _loadingStoryboard;
@@ -875,19 +875,25 @@ public bool IsContentCollapsed
         // Новая логика для таймера
         private void TopmostTimer_Tick(object sender, EventArgs e)
         {
+            // Не проверяем, если открыт ComboBox dropdown (чтобы не мешать выбору)
+            if (IsAnyComboBoxDropdownOpen(this))
+            {
+                return;
+            }
+
             var gameWindows = FindAllGameWindows();
-    
+
             if (gameWindows.Count == 0)
             {
                 return;
             }
-            
+
             // Получаем хэндл текущего активного окна
             IntPtr activeWindowHandle = GetForegroundWindow();
-            
+
             // Проверяем, является ли активное окно одним из окон игры
             bool isAnyGameWindowActive = gameWindows.Contains(activeWindowHandle);
-            
+
             if (isAnyGameWindowActive)
             {
                 // Убеждаемся, что оверлей всегда поверх
@@ -1109,8 +1115,8 @@ public bool IsContentCollapsed
                 ClearFormFields();
                 EditCastleScroll.Visibility = Visibility.Collapsed;
                 TablesScrollViewer.Visibility = Visibility.Visible;
-                TimeButtonsPanel.Visibility = Visibility.Visible;
                 CastlesDataGrid.SelectedItem = null;
+                TimeButtonsPanel.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
@@ -1123,8 +1129,8 @@ public bool IsContentCollapsed
             // Просто скрываем форму редактирования и показываем основное окно
             EditCastleScroll.Visibility = Visibility.Collapsed;
             TablesScrollViewer.Visibility = Visibility.Visible;
-            TimeButtonsPanel.Visibility = Visibility.Visible;
             CastlesDataGrid.SelectedItem = null;
+            TimeButtonsPanel.Visibility = Visibility.Visible;
         }
 
         private async Task UpdateCastleOnServer(CastleUpdateRequest request)
@@ -1303,10 +1309,6 @@ public bool IsContentCollapsed
             _keyboardHook = HookCallback;
             _keyboardHookID = SetHook(_keyboardHook);
 
-            _windowDiscoveryTimer.Interval = TimeSpan.FromSeconds(2);
-            _windowDiscoveryTimer.Tick += WindowDiscoveryTimer_Tick;
-            _windowDiscoveryTimer.Start();
-
             LoadTokenFromFile();
             if (!string.IsNullOrEmpty(_token))
             {
@@ -1325,27 +1327,6 @@ public bool IsContentCollapsed
                 SwitchToEmailLogin();
                 IsLoading = false;
                 IsSavedLoading = false;
-            }
-        }
-
-        private void WindowDiscoveryTimer_Tick(object sender, EventArgs e)
-        {
-            if (IsAnyComboBoxDropdownOpen(this))
-            {
-                return; 
-            }
-
-            // Периодически проверяем появление новых окон игры
-            var currentGameWindows = FindAllGameWindows();
-
-            if (currentGameWindows.Count > 0)
-            {
-                // Если нашли окна игры, принудительно обновляем позиционирование
-                IntPtr myWindowHandle = new WindowInteropHelper(this).Handle;
-                foreach (var gameWindow in currentGameWindows)
-                {
-                    SetWindowPos(myWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-                }
             }
         }
 
@@ -2075,7 +2056,8 @@ public bool IsContentCollapsed
                     RowSpacing = _loadedRowSpacing,
                     EditCastleRowSpacing = _editCastleRowSpacing,
                     StatusIndicatorShape = _statusIndicatorShape,
-                    UseColonFormat = _useColonFormat
+                    UseColonFormat = _useColonFormat,
+                    TimeButtonSpacing = _timeButtonSpacing
                 };
 
                 var json = JsonSerializer.Serialize(settings);
@@ -2213,6 +2195,8 @@ public bool IsContentCollapsed
                         if (_loadedColumnSpacing < 0 || _loadedColumnSpacing > 50) _loadedColumnSpacing = 10.0;
                         _loadedRowSpacing = settings.RowSpacing;
                         if (_loadedRowSpacing < 10 || _loadedRowSpacing > 100) _loadedRowSpacing = 30.0;
+                        _loadedTimeButtonSpacing = settings.TimeButtonSpacing;
+                        if (_loadedTimeButtonSpacing < 0 || _loadedTimeButtonSpacing > 30) _loadedTimeButtonSpacing = 6.0;
                   _editCastleRowSpacing = settings.EditCastleRowSpacing;
                         if (_editCastleRowSpacing < 2 || _editCastleRowSpacing > 30) _editCastleRowSpacing = 8.0;
                         _statusIndicatorShape = settings.StatusIndicatorShape;
@@ -2301,6 +2285,7 @@ public bool IsContentCollapsed
             TablesPanel.Visibility = Visibility.Collapsed;
             TablesScrollViewer.Visibility = Visibility.Collapsed;
             EditCastleScroll.Visibility = Visibility.Collapsed;
+            TimeButtonsPanel.Visibility = Visibility.Collapsed;
         }
 
         private void SwitchToTokenLogin()
@@ -2311,6 +2296,7 @@ public bool IsContentCollapsed
             TablesPanel.Visibility = Visibility.Collapsed;
             TablesScrollViewer.Visibility = Visibility.Collapsed;
             EditCastleScroll.Visibility = Visibility.Collapsed;
+            TimeButtonsPanel.Visibility = Visibility.Collapsed;
         }
 
         private void LoadTokenFromFile()
@@ -2518,7 +2504,6 @@ public bool IsContentCollapsed
                     TablesPanel.Visibility = Visibility.Collapsed;
                     TablesScrollViewer.Visibility = Visibility.Visible;
                     EditCastleScroll.Visibility = Visibility.Collapsed;
-                    TimeButtonsPanel.Visibility = Visibility.Visible;
                 }
             }
         }
@@ -2604,14 +2589,9 @@ public bool IsContentCollapsed
 
             if (scrollViewer != null)
             {
-                if (e.Delta > 0)
-                {
-                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
-                }
-                else
-                {
-                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
-                }
+                // Скролл привязан к высоте ряда: один тик колеса ≈ один ряд
+                double scrollAmount = e.Delta / 120.0 * CastlesDataGrid.RowHeight;
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - scrollAmount);
 
                 // Помечаем событие как обработанное, чтобы оно не дошло до DataGrid
                 e.Handled = true;
@@ -2658,6 +2638,7 @@ public bool IsContentCollapsed
             TablesPanel.Visibility = Visibility.Visible;
             TablesScrollViewer.Visibility = Visibility.Collapsed;
             EditCastleScroll.Visibility = Visibility.Collapsed;
+            TimeButtonsPanel.Visibility = Visibility.Collapsed;
         }
 
         private void SwitchToMainContent()
@@ -2668,6 +2649,7 @@ public bool IsContentCollapsed
             EditCastleScroll.Visibility = Visibility.Collapsed;
             TimeButtonsPanel.Visibility = Visibility.Visible;
             _selectedCastle = null;
+            UpdateButtonAppearance();
         }
 
         private void SwitchToLoginPanel()
@@ -2676,6 +2658,7 @@ public bool IsContentCollapsed
             TablesPanel.Visibility = Visibility.Collapsed;
             TablesScrollViewer.Visibility = Visibility.Collapsed;
             EditCastleScroll.Visibility = Visibility.Collapsed;
+            TimeButtonsPanel.Visibility = Visibility.Collapsed;
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -2704,6 +2687,7 @@ public bool IsContentCollapsed
                 }
 
                 ApplyFilterAndSort();
+                SaveButtonSettings();
             }
         }
 
@@ -2923,15 +2907,9 @@ public bool IsContentCollapsed
 
             if (scrollViewer != null)
             {
-                // Проверяем направление прокрутки
-                if (e.Delta > 0)
-                {
-                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
-                }
-                else
-                {
-                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
-                }
+                // Скролл привязан к высоте ряда: один тик колеса ≈ один ряд
+                double scrollAmount = e.Delta / 120.0 * CastlesDataGrid.RowHeight;
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - scrollAmount);
 
                 // Помечаем событие как обработанное, чтобы оно не дошло до других элементов
                 e.Handled = true;
@@ -3240,6 +3218,10 @@ public bool IsContentCollapsed
     private double _loadedFontSize;
     private double _loadedColumnSpacing;
     private double _loadedRowSpacing;
+    private TextBox _timeButtonSpacingTextBox;
+    private double _timeButtonSpacing = 6.0;
+    private double _savedTimeButtonSpacing;
+    private double _loadedTimeButtonSpacing;
 
     private const double ROW_HEIGHT_FONT_COEFFICIENT = 0.75;
 
@@ -3287,6 +3269,10 @@ public bool IsContentCollapsed
             _savedEditCastleRowSpacing = ecs;
         else
             _savedEditCastleRowSpacing = _editCastleRowSpacing;
+        if (_timeButtonSpacingTextBox != null && double.TryParse(_timeButtonSpacingTextBox.Text, out double tbs))
+            _savedTimeButtonSpacing = tbs;
+        else
+            _savedTimeButtonSpacing = _timeButtonSpacing;
     }
 
 private void ApplySettings()
@@ -3316,6 +3302,10 @@ private void ApplySettings()
             _editCastleRowSpacing = editCastleSpacing;
            ApplyEditCastleRowSpacing(editCastleSpacing);
         }
+        if (double.TryParse(_timeButtonSpacingTextBox?.Text, out double timeBtnSpacing) && timeBtnSpacing >= 0 && timeBtnSpacing <= 30)
+        {
+            ApplyTimeButtonSpacing(timeBtnSpacing);
+        }
         SaveWindowPosition();
     }
 
@@ -3329,6 +3319,7 @@ private void ApplySettings()
         ApplyEditCastleRowSpacing(_savedRowSpacing);
         ApplyLevelButtonFontSize(_savedLevelButtonFontSize);
         ApplyEditCastleRowSpacing(_savedEditCastleRowSpacing);
+        ApplyTimeButtonSpacing(_savedTimeButtonSpacing);
         _isRestoring = false;
     }
 
@@ -3377,6 +3368,19 @@ private void ApplySettings()
         }
     }
 
+    private void ApplyTimeButtonSpacing(double spacing)
+    {
+        _timeButtonSpacing = spacing;
+        if (TimeButtonsPanel == null) return;
+        foreach (var child in TimeButtonsPanel.Children)
+        {
+            if (child is Button btn && btn.Tag != null)
+            {
+                btn.Margin = new Thickness(spacing / 2, 0, spacing / 2, 0);
+            }
+        }
+    }
+
    private void ApplyLoadedSettings()
     {
         // Применяем загруженные настройки к гриду
@@ -3394,8 +3398,10 @@ private void ApplySettings()
         style.Setters.Add(new Setter(DataGridCell.PaddingProperty, new Thickness(_loadedColumnSpacing / 2, 0, _loadedColumnSpacing / 2, 0)));
         CastlesDataGrid.Resources[typeof(DataGridCell)] = style;
 
-        // Применяем остальные настройки
+    // Применяем остальные настройки
         ApplyLevelButtonFontSize(_levelButtonFontSize);
+        if (_timeButtonSpacingTextBox != null) _timeButtonSpacingTextBox.Text = _loadedTimeButtonSpacing.ToString();
+        ApplyTimeButtonSpacing(_loadedTimeButtonSpacing);
         RestoreStatusShapeInSettings();
         RestoreTimeFormatInSettings();
     }
@@ -3610,6 +3616,11 @@ private void ApplySettings()
         _editCastleRowSpacingTextBox.PreviewMouseDown += SettingsTextBox_PreviewMouseDown;
         _editCastleRowSpacingTextBox.TextChanged += SettingsTextBox_TextChanged;
 
+        _timeButtonSpacingTextBox = new TextBox { Text = "6", HorizontalContentAlignment = HorizontalAlignment.Center };
+        _timeButtonSpacingTextBox.GotFocus += TextBox_GotFocus;
+        _timeButtonSpacingTextBox.PreviewMouseDown += SettingsTextBox_PreviewMouseDown;
+        _timeButtonSpacingTextBox.TextChanged += SettingsTextBox_TextChanged;
+
         var applyButton = new Button
         {
             Content = "Применить",
@@ -3691,6 +3702,7 @@ private void ApplySettings()
 
           CreateStepperRow("Шрифт кнопок уровней:", _levelFontSizeTextBox, 1, 8, 32),
                 CreateStepperRow("Отступы в форме замка:", _editCastleRowSpacingTextBox, 1, 2, 30),
+                CreateStepperRow("Расстояние между кнопками времени:", _timeButtonSpacingTextBox, 1, 0, 30),
 
                 // Выбор формы индикатора статуса
                 new TextBlock { Text = "Форма индикатора статуса:", Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 12, 0, 4) },
@@ -3704,6 +3716,15 @@ private void ApplySettings()
                 resetButton,
                 backButton
             }
+        };
+
+        // Обёртка со скроллом для содержимого настроек
+        var scrollViewer = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            MaxHeight = 600,
+            Content = contentPanel
         };
 
         // Внешний Border — полупрозрачный тёмный фон на всё окно
@@ -3724,7 +3745,7 @@ private void ApplySettings()
             BorderBrush = new SolidColorBrush(Color.FromArgb(80, 100, 140, 200)),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(25, 20, 25, 20),
-            Child = contentPanel
+            Child = scrollViewer
         };
 
         // Добавляем settingsCard в backdrop
