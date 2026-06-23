@@ -911,10 +911,18 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Top">
-                                <Button x:Name="LogoutButton"
+                                         Orientation="Horizontal"
+                                         HorizontalAlignment="Right"
+                                         VerticalAlignment="Top">
+                                 <!-- Индикатор статуса подключения -->
+                                 <Ellipse x:Name="ConnectionStatusIndicator"
+                                          Width="8"
+                                          Height="8"
+                                          Fill="#f04736"
+                                          Margin="10,8,0,0"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"/>
+                                 <Button x:Name="LogoutButton"
                                         Width="20"
                                         Height="30"
                                         Background="Transparent"

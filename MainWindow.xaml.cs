@@ -806,20 +806,48 @@ public bool IsContentCollapsed
         }
 
         public bool IsSavedLoading
-        {
-            get => _isSavedLoading;
-            set
-            {
-                if (_isSavedLoading != value)
-                {
-                    _isSavedLoading = value;
-                    NotifyPropertyChanged(nameof(IsSavedLoading));
-                    UpdateLoadingAnimation();
-                }
-            }
-        }
-        
-        // ========= НАЧАЛО ИЗМЕНЕНИЙ =========
+         {
+             get => _isSavedLoading;
+             set
+             {
+                 if (_isSavedLoading != value)
+                 {
+                     _isSavedLoading = value;
+                     NotifyPropertyChanged(nameof(IsSavedLoading));
+                     UpdateLoadingAnimation();
+                 }
+             }
+         }
+
+         private bool _isWebSocketConnected;
+         public bool IsWebSocketConnected
+         {
+             get => _isWebSocketConnected;
+             set
+             {
+                 if (_isWebSocketConnected != value)
+                 {
+                     _isWebSocketConnected = value;
+                     NotifyPropertyChanged(nameof(IsWebSocketConnected));
+                     UpdateConnectionIndicator();
+                 }
+             }
+         }
+
+          private void UpdateConnectionIndicator()
+          {
+              Dispatcher.Invoke(() =>
+              {
+                  if (ConnectionStatusIndicator != null)
+                  {
+                      ConnectionStatusIndicator.Fill = IsWebSocketConnected
+                          ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#4ade80"))
+                          : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#f04736"));
+                  }
+              });
+          }
+
+         // ========= НАЧАЛО ИЗМЕНЕНИЙ =========
         
         // Имя процесса игры для отслеживания
         private const string TargetProcessName = "sphereclient";
@@ -1261,10 +1289,11 @@ public bool IsContentCollapsed
         }
 
         public MainWindow()
-        {
-            LoadWindowPosition();
-            InitializeComponent();
-             CastlesDataGrid.ColumnDisplayIndexChanged += (s, e) => SaveColumnOrder();
+         {
+             LoadWindowPosition();
+             InitializeComponent();
+             IsWebSocketConnected = false; // Начальное состояние: не подключены
+              CastlesDataGrid.ColumnDisplayIndexChanged += (s, e) => SaveColumnOrder();
                // MouseLeftButtonUp (не Preview!) — срабатывает ПОСЛЕ adorner ресайза
                // handledEventsToo=true — ловим даже если CastlesDataGrid_MouseLeftButtonUp обработал событие
                CastlesDataGrid.AddHandler(UIElement.MouseLeftButtonUpEvent,
@@ -2406,11 +2435,12 @@ public bool IsContentCollapsed
         }
 
         private void LogoutButton_Click(object sender, RoutedEventArgs e)
-        {
-            StatusTextBlock.Text = "";
-            _token = null;
+          {
+              StatusTextBlock.Text = "";
+              _token = null;
+              IsWebSocketConnected = false;
 
-            // 2. Очищаем токен в файле
+              // 2. Очищаем токен в файле
             SaveTokenToFile(null);
 
             // 3. Переключаем на панель входа
@@ -2973,10 +3003,11 @@ public bool IsContentCollapsed
             }
         }
         private async Task DisconnectWebSocket()
-        {
-            _isUserInitiatedDisconnect = true; // <-- Ставим флаг, что это мы сами отключили
-    
-            if (_webSocket.State == WebSocketState.Open)
+          {
+              _isUserInitiatedDisconnect = true; // <-- Ставим флаг, что это мы сами отключили
+              IsWebSocketConnected = false;
+
+              if (_webSocket.State == WebSocketState.Open)
             {
                 _cts.Cancel();
                 try
@@ -3025,7 +3056,10 @@ public bool IsContentCollapsed
                     
                     StatusTextBlock.Text = ""; // Очищаем ошибки если были
 
-                    // Слушаем сообщения (этот метод заблокирует выполнение, пока сокет жив)
+                     // Индикатор подключения
+                     IsWebSocketConnected = true;
+
+                     // Слушаем сообщения (этот метод заблокирует выполнение, пока сокет жив)
                     await ReceiveWebSocketMessagesAsync();
                 }
                 catch (Exception ex)
@@ -3033,10 +3067,13 @@ public bool IsContentCollapsed
                     App.Logger.Error(ex, "Ошибка WS");
                 }
                 finally
-                {
-                    // Очистка ресурсов перед следующей попыткой
-                    try { _webSocket.Dispose(); } catch { }
-                }
+                 {
+                     // Индикатор: отключились
+                     IsWebSocketConnected = false;
+
+                     // Очистка ресурсов перед следующей попыткой
+                     try { _webSocket.Dispose(); } catch { }
+                 }
 
                 // Если мы здесь, значит соединение разорвано или возникла ошибка.
                 if (_isUserInitiatedDisconnect) break; // Если юзер нажал "Назад", выходим.
