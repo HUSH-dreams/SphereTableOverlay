@@ -336,6 +336,27 @@ namespace DollOverlay
         public static bool UseColonFormat = false;
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        // Статические кисти для избежания аллокаций (заморожены для производительности)
+         private static readonly SolidColorBrush _redBrush;
+         private static readonly SolidColorBrush _yellowBrush;
+         private static readonly SolidColorBrush _whiteBrush;
+         private static readonly SolidColorBrush _naBrush;
+         private static readonly SolidColorBrush _blueBrush;
+
+         static Castle()
+         {
+             _redBrush = new SolidColorBrush(Color.FromRgb(0x96, 0x3b, 0x4c));
+             _redBrush.Freeze();
+             _yellowBrush = new SolidColorBrush(Color.FromRgb(0xbd, 0x9f, 0x53));
+             _yellowBrush.Freeze();
+             _whiteBrush = new SolidColorBrush(Color.FromRgb(0xd7, 0xdb, 0xd9));
+             _whiteBrush.Freeze();
+             _naBrush = new SolidColorBrush(Color.FromRgb(0x12, 0x24, 0x1a));
+             _naBrush.Freeze();
+             _blueBrush = new SolidColorBrush(Color.FromRgb(0x49, 0x5e, 0x9e));
+             _blueBrush.Freeze();
+         }
+
         private int _id;
         public int id
         {
@@ -578,31 +599,31 @@ public string WhiteTime
         }
 
         public SolidColorBrush StatusColor
-        {
-            get
-            {
-                if (StatusText == "Красный")
-                {
-                    return new SolidColorBrush(Color.FromRgb(0x96, 0x3b, 0x4c));
-                }
-                else if (StatusText == "Желтый")
-                {
-                    return new SolidColorBrush(Color.FromRgb(0xbd, 0x9f, 0x53));
-                }
-                else if (StatusText == "Белый")
-                {
-                    return new SolidColorBrush(Color.FromRgb(0xd7, 0xdb, 0xd9));
-                }
-                else if (StatusText == "N/A" || StatusText == "-")
-                {
-                    return new SolidColorBrush(Color.FromRgb(0x12, 0x24, 0x1a));
-                }
-                else
-                {
-                    return new SolidColorBrush(Color.FromRgb(0x49, 0x5e, 0x9e));
-                }
-            }
-        }
+         {
+             get
+             {
+                 if (StatusText == "Красный")
+                 {
+                     return _redBrush;
+                 }
+                 else if (StatusText == "Желтый")
+                 {
+                     return _yellowBrush;
+                 }
+                 else if (StatusText == "Белый")
+                 {
+                     return _whiteBrush;
+                 }
+                 else if (StatusText == "N/A" || StatusText == "-")
+                 {
+                     return _naBrush;
+                 }
+                 else
+                 {
+                     return _blueBrush;
+                 }
+             }
+         }
 
         public DateTime RedTimeExact
         {
