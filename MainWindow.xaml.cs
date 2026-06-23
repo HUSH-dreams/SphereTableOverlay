@@ -1360,19 +1360,19 @@ public bool IsContentCollapsed
         }
 
         private void MainWindow_SourceInitialized(object sender, EventArgs e)
-        {
-            IntPtr hwnd = new WindowInteropHelper(this).Handle;
+         {
+             _overlayWindowHandle = new WindowInteropHelper(this).Handle;
             
-            int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+             int exStyle = GetWindowLong(_overlayWindowHandle, GWL_EXSTYLE);
             
-            // Основные стили для оверлея
-            exStyle |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
+             // Основные стили для оверлея
+             exStyle |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
             
-            // Если хотите, чтобы клики проходили сквозь оверлей - раскомментируйте:
-            // exStyle |= WS_EX_TRANSPARENT;
+             // Если хотите, чтобы клики проходили сквозь оверлей - раскомментируйте:
+             // exStyle |= WS_EX_TRANSPARENT;
             
-            SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
-        }
+             SetWindowLong(_overlayWindowHandle, GWL_EXSTYLE, exStyle);
+         }
 
         private IntPtr SetHook(LowLevelKeyboardProc proc)
         {
@@ -1385,12 +1385,25 @@ public bool IsContentCollapsed
         }
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-        {
-            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
-            {
-                int vkCode = Marshal.ReadInt32(lParam);
+         {
+             if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_KEYUP))
+              {
+                  // Если оверлей НЕ в foreground — пропускаем все keydown/keyup в игру
+                  IntPtr foregroundWindow = GetForegroundWindow();
+                  if (foregroundWindow != _overlayWindowHandle)
+                  {
+                      return CallNextHookEx(_keyboardHookID, nCode, wParam, lParam);
+                  }
 
-                // Получаем список активных контролов для ТЕКУЩЕГО экрана
+                  int vkCode = Marshal.ReadInt32(lParam);
+
+                  // Если это KEYUP — просто пропускаем дальше, чтобы игра получала release
+                   if (wParam == (IntPtr)WM_KEYUP)
+                   {
+                       return CallNextHookEx(_keyboardHookID, nCode, wParam, lParam);
+                   }
+
+                  // Получаем список активных контролов для ТЕКУЩЕГО экрана
                 var formControls = GetActiveInputControls();
                 
                 // Если активных полей нет (например, мы просто смотрим таблицу), хук не перехватывает ввод
@@ -2005,9 +2018,11 @@ public bool IsContentCollapsed
         private static extern bool GetKeyboardState(byte[] lpKeyState);
 
         private const int WH_KEYBOARD_LL = 13;
-        private const int WM_KEYDOWN = 0x0100;
+         private const int WM_KEYDOWN = 0x0100;
+         private const int WM_KEYUP = 0x0101;
         private LowLevelKeyboardProc _keyboardHook;
-        private IntPtr _keyboardHookID = IntPtr.Zero;
+         private IntPtr _keyboardHookID = IntPtr.Zero;
+    private IntPtr _overlayWindowHandle = IntPtr.Zero;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
