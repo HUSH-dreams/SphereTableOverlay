@@ -695,6 +695,14 @@ public string RedTime
     // Добавьте этот класс в файл MainWindow.xaml.cs (например, перед классом MainWindow)
     public static class FocusHelper
     {
+        // Статический флаг: True когда оверлей "в фокусе" (выбран контрол)
+        public static bool IsActive { get; private set; } = false;
+
+        public static void SetActive(bool value)
+        {
+            IsActive = value;
+        }
+
         public static readonly DependencyProperty IsOverlayFocusedProperty =
             DependencyProperty.RegisterAttached(
                 "IsOverlayFocused",
@@ -733,6 +741,7 @@ public string RedTime
         private List<Clan> _clans = new List<Clan>();
         private UserTableInfo _selectedTable;
         private Castle _selectedCastle;
+        private Control? _lastFocusedControl;
         [DllImport("user32.dll")]
         private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
@@ -1161,6 +1170,7 @@ public bool IsContentCollapsed
             try
             {
                 await UpdateCastleOnServer(request);
+                ApplyFilterAndSort();
                 ClearFormFields();
                 EditCastleScroll.Visibility = Visibility.Collapsed;
                 TablesScrollViewer.Visibility = Visibility.Visible;
@@ -1344,7 +1354,7 @@ public bool IsContentCollapsed
 
             // this.Deactivated += Window_Deactivated;
 
-            _refreshTimer.Interval = TimeSpan.FromSeconds(5);
+            _refreshTimer.Interval = TimeSpan.FromSeconds(15);
             _refreshTimer.Tick += RefreshTimer_Tick;
 
             CastlesDataGrid.ItemsSource = _castlesObservable;
@@ -1409,9 +1419,8 @@ public bool IsContentCollapsed
          {
              if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_KEYUP))
               {
-                  // Если оверлей НЕ в foreground — пропускаем все keydown/keyup в игру
-                  IntPtr foregroundWindow = GetForegroundWindow();
-                  if (foregroundWindow != _overlayWindowHandle)
+                  // Если оверлей НЕ активен — пропускаем все keydown/keyup в игру
+                  if (!FocusHelper.IsActive)
                   {
                       return CallNextHookEx(_keyboardHookID, nCode, wParam, lParam);
                   }
@@ -1430,7 +1439,8 @@ public bool IsContentCollapsed
                 // Если активных полей нет (например, мы просто смотрим таблицу), хук не перехватывает ввод
                 if (formControls.Count > 0)
                 {
-                    var focusedControl = Keyboard.FocusedElement as Control;
+                    // WS_EX_NOACTIVATE: Keyboard.FocusedElement всегда null, используем ручной трекер
+                    var focusedControl = _lastFocusedControl;
                     Log($"[HOOK] vkCode={vkCode}, focusedControl={focusedControl?.GetType().Name}, formControls.Count={formControls.Count}");
                     if (focusedControl != null)
                     {
@@ -1712,10 +1722,14 @@ public bool IsContentCollapsed
             foreach (var c in allControls)
             {
                 FocusHelper.SetIsOverlayFocused(c, false);
+                if (c == _lastFocusedControl)
+                    _lastFocusedControl = null;
             }
 
             // 2. Устанавливаем "виртуальный фокус" на целевой элемент
             FocusHelper.SetIsOverlayFocused(control, true);
+            _lastFocusedControl = control;
+            FocusHelper.SetActive(true);
 
             // 3. Оставляем старую логику WPF (на всякий случай)
             control.Focus();
@@ -1724,6 +1738,17 @@ public bool IsContentCollapsed
                 textBox.SelectAll();
             }
             Log($"[FOCUS] Keyboard.FocusedElement={Keyboard.FocusedElement?.GetType().Name}");
+        }
+
+        private void ClearOverlayFocus()
+        {
+            if (_lastFocusedControl != null)
+            {
+                FocusHelper.SetIsOverlayFocused(_lastFocusedControl, false);
+                _lastFocusedControl = null;
+            }
+            FocusHelper.SetActive(false);
+            Log("[FOCUS] Cleared");
         }
 
         private void HandleTabNavigation(Control currentControl, bool isReverse = false)
@@ -2399,9 +2424,6 @@ public bool IsContentCollapsed
                 }
 
                 // 2. Обновляем свойства (это вызывает пересчет WhiteTime внутри геттеров)
-                // ApplyFilterAndSort() НЕ вызываем — порядок элементов не меняется,
-                // а вычисляемые свойства (WhiteTime, StatusText, StatusColor) обновляются
-                // автоматически через INotifyPropertyChanged и XAML-биндинги.
                 foreach (var castle in castlesSnapshot)
                 {
                     castle.NotifyPropertyChanged(nameof(castle.WhiteTime));
@@ -2409,6 +2431,9 @@ public bool IsContentCollapsed
                     castle.NotifyPropertyChanged(nameof(castle.StatusColor));
                     castle.NotifyPropertyChanged(nameof(castle.RedTime));
                 }
+
+                // 3. Пересортировываем — порядок может измениться, т.к. WhiteTime меняется
+                Application.Current.Dispatcher.Invoke(() => ApplyFilterAndSort());
             }
             catch (Exception ex)
             {
@@ -3906,6 +3931,16 @@ private void ApplySettings()
     private void SettingsTextBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         Log($"[SETTINGS] PreviewMouseDown on {sender?.GetType().Name}");
+        if (sender is Control control)
+        {
+            FocusAndSelect(control);
+            e.Handled = true;
+        }
+    }
+
+    private void Input_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        Log($"[INPUT] PreviewMouseDown on {sender?.GetType().Name}");
         if (sender is Control control)
         {
             FocusAndSelect(control);

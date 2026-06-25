@@ -901,27 +901,27 @@
                                         Margin="12,5,0,0"
                                         FocusVisualStyle="{x:Null}">
                                         <Image x:Name="BackgroundToggleButtonImage"
-                                                Source="images/show-background.png"
-                                                Width="15"
-                                                Height="12"
-                                                VerticalAlignment="Center"
-                                                HorizontalAlignment="Center"
-                                                />
-                                </Button>
-                        </StackPanel>
+                                                         Source="images/show-background.png"
+                                                         Width="15"
+                                                         Height="12"
+                                                         VerticalAlignment="Center"
+                                                         HorizontalAlignment="Center"
+                                                         />
+                                         </Button>
+                                          <!-- Индикатор статуса подключения -->
+                                          <Ellipse x:Name="ConnectionStatusIndicator"
+                                                    Width="8"
+                                                    Height="8"
+                                                    Fill="#f04736"
+                                                    Margin="10,4,0,0"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"/>
+                                        </StackPanel>
 
-                        <StackPanel Grid.Column="1"
-                                         Orientation="Horizontal"
-                                         HorizontalAlignment="Right"
-                                         VerticalAlignment="Top">
-                                 <!-- Индикатор статуса подключения -->
-                                 <Ellipse x:Name="ConnectionStatusIndicator"
-                                          Width="8"
-                                          Height="8"
-                                          Fill="#f04736"
-                                          Margin="10,8,0,0"
-                                          HorizontalAlignment="Left"
-                                          VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1"
+                                                  Orientation="Horizontal"
+                                                  HorizontalAlignment="Right"
+                                                  VerticalAlignment="Top">
                                  <Button x:Name="LogoutButton"
                                         Width="20"
                                         Height="30"
@@ -1072,23 +1072,25 @@
                                        FontWeight="Bold"
                                        Margin="0,10,0,0"/>
                                 <TextBox x:Name="EmailTextBox"
-                                                   FontSize="14"
-                                                   MaxWidth="250"
-                                                   Margin="0,2,0,10"
-                                                   Foreground="White"
-                                                   Background="#7a8ebf"
-                                                   GotFocus="TextBox_GotFocus"/>
+                                                    FontSize="14"
+                                                    MaxWidth="250"
+                                                    Margin="0,2,0,10"
+                                                    Foreground="White"
+                                                    Background="#7a8ebf"
+                                                    GotFocus="TextBox_GotFocus"
+                                                    PreviewMouseDown="Input_PreviewMouseDown"/>
                                 <Label Content="Пароль"
                                        FontSize="14"
                                        HorizontalAlignment="Center"
                                        Foreground="White"
                                        FontWeight="Bold"/>
                                 <PasswordBox x:Name="PasswordBox"
-                                                   Style="{StaticResource PasswordBox}"
-                                                   FontSize="14"
-                                                   MaxWidth="250"
-                                                   Margin="0,2,0,10"
-                                                   GotFocus="TextBox_GotFocus"/>
+                                                     Style="{StaticResource PasswordBox}"
+                                                     FontSize="14"
+                                                     MaxWidth="250"
+                                                     Margin="0,2,0,10"
+                                                     GotFocus="TextBox_GotFocus"
+                                                     PreviewMouseDown="Input_PreviewMouseDown"/>
                                 <Button x:Name="LoginButton"
                                         FontSize="14"
                                         Content="Войти"
@@ -1121,12 +1123,13 @@
                                        FontWeight="Bold"
                                        Margin="0,10,0,0"/>
                                 <TextBox x:Name="TokenTextBox"
-                                                    FontSize="14"
-                                                    Foreground="White"
-                                                    Background="#7a8ebf"
-                                                    MaxWidth="250"
-                                                    Margin="0,2,0,10"
-                                                    GotFocus="TextBox_GotFocus"/>
+                                                           FontSize="14"
+                                                           Foreground="White"
+                                                           Background="#7a8ebf"
+                                                           MaxWidth="250"
+                                                           Margin="0,2,0,10"
+                                                           GotFocus="TextBox_GotFocus"
+                                                           PreviewMouseDown="Input_PreviewMouseDown"/>
                                 <Button Content="Войти"
                                         FontSize="14"
                                         x:Name="TokenLoginButton"
