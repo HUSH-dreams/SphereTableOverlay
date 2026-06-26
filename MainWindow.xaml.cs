@@ -333,7 +333,19 @@ namespace DollOverlay
 // Модель для данных замка
     public class Castle : INotifyPropertyChanged
     {
-        public static bool UseColonFormat = false;
+        public static bool UseColonFormat
+        {
+            get => _useColonFormat;
+            set
+            {
+                if (_useColonFormat != value)
+                {
+                    _useColonFormat = value;
+                    ColonFormatChanged?.Invoke();
+                }
+            }
+        }
+        private static bool _useColonFormat = false;
         public event PropertyChangedEventHandler? PropertyChanged;
 
         // Статические кисти для избежания аллокаций (заморожены для производительности)
@@ -356,6 +368,116 @@ namespace DollOverlay
              _blueBrush = new SolidColorBrush(Color.FromRgb(0x49, 0x5e, 0x9e));
              _blueBrush.Freeze();
          }
+
+        public Castle()
+        {
+            ColonFormatChanged += InvalidateStringCache;
+        }
+
+        // Кэшированные вычисляемые свойства — вычисляются один раз при изменении fillingDatetime
+        private long? _parsedDatetime;
+        private DateTime _cachedWhiteTime;
+        private TimeSpan _cachedTimeRemaining;
+        private string _cachedStatusText = "N/A";
+        private DateTime _cachedRedTimeExact;
+        private string _cachedWhiteTimeString = "N/A";
+        private string _cachedRedTimeString = "N/A";
+        private bool _cacheValid = false;
+
+        // Когда UseColonFormat меняется — инвалидируем кэш строк
+        static event Action? ColonFormatChanged;
+
+        private void RecomputeCache()
+        {
+            if (string.IsNullOrEmpty(fillingDatetime) || !long.TryParse(fillingDatetime, out long unixTime) || lvl == null || fillingLvl == null)
+            {
+                _parsedDatetime = null;
+                _cachedWhiteTime = DateTime.MinValue;
+                _cachedTimeRemaining = TimeSpan.Zero;
+                _cachedStatusText = "N/A";
+                _cachedRedTimeExact = DateTime.MinValue;
+                _cachedWhiteTimeString = "N/A";
+                _cachedRedTimeString = "N/A";
+                _cacheValid = false;
+                return;
+            }
+
+            _parsedDatetime = unixTime;
+            DateTime whiteTime = CastleHelper.GetWhiteTime(unixTime, lvl, fillingLvl);
+            _cachedWhiteTime = whiteTime;
+            TimeSpan timeRemaining = whiteTime - DateTime.Now;
+            _cachedTimeRemaining = timeRemaining;
+
+            // StatusText
+            if (timeRemaining.TotalMinutes >= -3 && timeRemaining.TotalMinutes < 0)
+            {
+                _cachedStatusText = "Белый";
+            }
+            else if (timeRemaining.TotalMinutes < -3)
+            {
+                _cachedStatusText = "-";
+            }
+            else
+            {
+                TimeSpan redThreshold = CastleHelper.GetRedTimeThreshold(lvl);
+                DateTime redTime = whiteTime.Subtract(redThreshold);
+                DateTime yellowTime = redTime.Subtract(TimeSpan.FromHours(1));
+                DateTime now = DateTime.Now;
+                if (now >= redTime)
+                    _cachedStatusText = "Красный";
+                else if (now >= yellowTime)
+                    _cachedStatusText = "Желтый";
+                else
+                    _cachedStatusText = "Синий";
+            }
+
+            // RedTimeExact
+            _cachedRedTimeExact = whiteTime.Subtract(CastleHelper.GetRedTimeThreshold(lvl));
+
+            // Форматированные строки
+            if (timeRemaining.TotalMinutes <= -3)
+            {
+                _cachedWhiteTimeString = "-";
+            }
+            else if (timeRemaining.TotalMinutes <= 0 && timeRemaining.TotalMinutes > -3)
+            {
+                _cachedWhiteTimeString = "Белый";
+            }
+            else
+            {
+                int hours = (int)timeRemaining.TotalHours;
+                int minutes = timeRemaining.Minutes;
+                _cachedWhiteTimeString = Castle.UseColonFormat ? $"{hours}:{minutes:D2}" : $"{hours}ч {minutes}м";
+            }
+
+            DateTime redTimeExact = _cachedRedTimeExact;
+            if (redTimeExact == DateTime.MinValue)
+            {
+                _cachedRedTimeString = "N/A";
+            }
+            else
+            {
+                TimeSpan redRemaining = redTimeExact - DateTime.Now;
+                if (redRemaining.TotalMinutes <= 0)
+                {
+                    _cachedRedTimeString = "-";
+                }
+                else
+                {
+                    int hours = (int)redRemaining.TotalHours;
+                    int minutes = redRemaining.Minutes;
+                    _cachedRedTimeString = Castle.UseColonFormat ? $"{hours}:{minutes:D2}" : $"{hours}ч {minutes}м";
+                }
+            }
+
+            _cacheValid = true;
+        }
+
+        private void InvalidateStringCache()
+        {
+            if (!_cacheValid) return;
+            RecomputeCache();
+        }
 
         private int _id;
         public int id
@@ -380,7 +502,14 @@ namespace DollOverlay
                 if (_lvl != value)
                 {
                     _lvl = value;
+                    RecomputeCache();
                     NotifyPropertyChanged();
+                    NotifyPropertyChanged(nameof(WhiteTimeExact));
+                    NotifyPropertyChanged(nameof(WhiteTime));
+                    NotifyPropertyChanged(nameof(StatusText));
+                    NotifyPropertyChanged(nameof(StatusColor));
+                    NotifyPropertyChanged(nameof(RedTimeExact));
+                    NotifyPropertyChanged(nameof(RedTime));
                 }
             }
         }
@@ -436,7 +565,14 @@ namespace DollOverlay
                 if (_fillingLvl != value)
                 {
                     _fillingLvl = value;
+                    RecomputeCache();
                     NotifyPropertyChanged();
+                    NotifyPropertyChanged(nameof(WhiteTimeExact));
+                    NotifyPropertyChanged(nameof(WhiteTime));
+                    NotifyPropertyChanged(nameof(StatusText));
+                    NotifyPropertyChanged(nameof(StatusColor));
+                    NotifyPropertyChanged(nameof(RedTimeExact));
+                    NotifyPropertyChanged(nameof(RedTime));
                 }
             }
         }
@@ -493,6 +629,7 @@ namespace DollOverlay
                 if (_fillingDatetime != value)
                 {
                     _fillingDatetime = value;
+                    RecomputeCache();
                     NotifyPropertyChanged();
                     NotifyPropertyChanged(nameof(WhiteTimeExact));
                     NotifyPropertyChanged(nameof(WhiteTime));
@@ -508,11 +645,8 @@ namespace DollOverlay
         {
             get
             {
-                if (string.IsNullOrEmpty(fillingDatetime) || !long.TryParse(fillingDatetime, out long unixTime))
-                {
-                    return DateTime.MinValue;
-                }
-                return CastleHelper.GetWhiteTime(unixTime, lvl, fillingLvl);
+                if (!_cacheValid) return DateTime.MinValue;
+                return _cachedWhiteTime;
             }
         }
 
@@ -520,34 +654,8 @@ public string WhiteTime
         {
             get
             {
-                if (string.IsNullOrEmpty(fillingDatetime) || !long.TryParse(fillingDatetime, out long unixTime))
-                {
-                    return "N/A";
-                }
-
-                DateTime whiteTime = CastleHelper.GetWhiteTime(unixTime, lvl, fillingLvl);
-                TimeSpan timeRemaining = whiteTime - DateTime.Now;
-
-                // Если текущее время больше, чем WhiteTime на 5 минут
-                if (timeRemaining.TotalMinutes <= -3)
-                {
-                    return "-";
-                }
-
-                // Если осталось менее 5 минут, но еще не прошло 5 минут после WhiteTime
-                if (timeRemaining.TotalMinutes <= 0 && timeRemaining.TotalMinutes > -3)
-                {
-                    return "Белый";
-                }
-
-                if (Castle.UseColonFormat)
-                {
-                    int hours = (int)timeRemaining.TotalHours;
-                    int minutes = timeRemaining.Minutes;
-                    return $"{hours}:{minutes:D2}";
-                }
-
-                return $"{(int)timeRemaining.TotalHours}ч {timeRemaining.Minutes}м";
+                if (!_cacheValid) return "N/A";
+                return _cachedWhiteTimeString;
             }
         }
 
@@ -555,46 +663,8 @@ public string WhiteTime
         {
             get
             {
-                if (string.IsNullOrEmpty(fillingDatetime) || !long.TryParse(fillingDatetime, out long unixTime) || lvl == null || fillingLvl == null)
-                {
-                    return "N/A";
-                }
-
-                DateTime now = DateTime.Now;
-                DateTime whiteTime = CastleHelper.GetWhiteTime(unixTime, lvl, fillingLvl);
-                TimeSpan timeRemaining = whiteTime - DateTime.Now;
-
-                // Если текущее время больше, чем WhiteTime на 5 минут
-                if (timeRemaining.TotalMinutes >= -3 && timeRemaining.TotalMinutes < 0)
-                {
-                    return "Белый";
-                }
-
-                // Если замок уже белый
-                if (timeRemaining.TotalMinutes < -3)
-                {
-                    return "-";
-                }
-
-                // Расчет временных порогов
-                TimeSpan redThreshold = CastleHelper.GetRedTimeThreshold(lvl);
-                TimeSpan yellowThreshold = TimeSpan.FromHours(1); // 1 час до красного
-
-                DateTime redTime = whiteTime.Subtract(redThreshold);
-                DateTime yellowTime = redTime.Subtract(yellowThreshold);
-
-                if (now >= redTime)
-                {
-                    return "Красный";
-                }
-                else if (now >= yellowTime)
-                {
-                    return "Желтый";
-                }
-                else
-                {
-                    return "Синий";
-                }
+                if (!_cacheValid) return "N/A";
+                return _cachedStatusText;
             }
         }
 
@@ -602,51 +672,24 @@ public string WhiteTime
          {
              get
              {
-                 if (StatusText == "Красный")
+                 if (!_cacheValid) return _naBrush;
+                 return _cachedStatusText switch
                  {
-                     return _redBrush;
-                 }
-                 else if (StatusText == "Желтый")
-                 {
-                     return _yellowBrush;
-                 }
-                 else if (StatusText == "Белый")
-                 {
-                     return _whiteBrush;
-                 }
-                 else if (StatusText == "N/A" || StatusText == "-")
-                 {
-                     return _naBrush;
-                 }
-                 else
-                 {
-                     return _blueBrush;
-                 }
+                     "Красный" => _redBrush,
+                     "Желтый" => _yellowBrush,
+                     "Белый" => _whiteBrush,
+                     "N/A" or "-" => _naBrush,
+                     _ => _blueBrush
+                 };
              }
          }
 
-        public DateTime RedTimeExact
+         public DateTime RedTimeExact
         {
             get
             {
-                // Проверяем, есть ли все необходимые данные для расчета
-                if (string.IsNullOrEmpty(fillingDatetime) || !long.TryParse(fillingDatetime, out _))
-                {
-                    return DateTime.MinValue;
-                }
-
-                // Получаем время, когда замок станет белым
-                DateTime whiteTime = WhiteTimeExact;
-                if (whiteTime == DateTime.MinValue)
-                {
-                    return DateTime.MinValue;
-                }
-
-                // Получаем длительность "красной" фазы
-                TimeSpan redThreshold = CastleHelper.GetRedTimeThreshold(lvl);
-
-                // Вычисляем время начала "красной" фазы
-                return whiteTime.Subtract(redThreshold);
+                if (!_cacheValid) return DateTime.MinValue;
+                return _cachedRedTimeExact;
             }
         }
 
@@ -654,29 +697,8 @@ public string RedTime
         {
             get
             {
-                DateTime redTime = RedTimeExact;
-                // Если время не удалось рассчитать, возвращаем N/A
-                if (redTime == DateTime.MinValue)
-                {
-                    return "N/A";
-                }
-
-                TimeSpan timeRemaining = redTime - DateTime.Now;
-
-                // Если "красная" фаза уже наступила или прошла
-                if (timeRemaining.TotalMinutes <= 0)
-                {
-                    return "-";
-                }
-
-                if (Castle.UseColonFormat)
-                {
-                    int hours = (int)timeRemaining.TotalHours;
-                    int minutes = timeRemaining.Minutes;
-                    return $"{hours}:{minutes:D2}";
-                }
-
-                return $"{(int)timeRemaining.TotalHours}ч {timeRemaining.Minutes}м";
+                if (!_cacheValid) return "N/A";
+                return _cachedRedTimeString;
             }
         }
 
