@@ -1192,6 +1192,21 @@ public bool IsContentCollapsed
             try
             {
                 await UpdateCastleOnServer(request);
+
+                // Обновляем локальный объект свежими данными — ApplyFilterAndSort()
+                // читает из originalCastles, поэтому сортировка должна работать
+                // по актуальным значениям, а не ждать WebSocket-обновления.
+                var localCastle = originalCastles.FirstOrDefault(c => c.id == _selectedCastle.id);
+                if (localCastle != null)
+                {
+                    int.TryParse(FillingLvlComboBox.Text, out int fillingLvlVal);
+                    localCastle.fillingLvl = fillingLvlVal;
+                    localCastle.ownerClan = ((Clan)ClanComboBox.SelectedItem).id;
+                    localCastle.commentary = CommentaryTextBox.Text.Trim();
+                    localCastle.fillingSpheretime = FillingSpheretimeTextBox.Text.Trim();
+                    localCastle.fillingDatetime = unixTimestamp.ToString();
+                }
+
                 ApplyFilterAndSort();
                 ClearFormFields();
                 EditCastleScroll.Visibility = Visibility.Collapsed;
@@ -3007,14 +3022,11 @@ public bool IsContentCollapsed
                         existingCastleInOriginal.fillingDatetime = castleData.fillingDatetime;
                     }
 
-                    // Пересобираем таблицу только если изменился fillingDatetime — он влияет на сортировку.
-                    // Остальные поля (commentary, ownerClan, fillingLvl и т.д.) не меняют порядок строк.
-                    bool needsRebuild = existingCastleInObservable != null && 
-                        existingCastleInObservable.fillingDatetime != castleData.fillingDatetime;
-                    if (needsRebuild)
-                    {
-                        ApplyFilterAndSort();
-                    }
+                    // Всегда применяем сортировку после получения новых данных — пользователь ожидает актуальный порядок.
+                     if (existingCastleInObservable != null)
+                     {
+                         ApplyFilterAndSort();
+                     }
                 }
             });
         }

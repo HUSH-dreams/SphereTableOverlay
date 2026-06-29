@@ -852,8 +852,8 @@
     </Border>
 
     <!-- === КОНТЕНТ === -->    
-    <ContentPresenter Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Grid.ColumnSpan="3" Margin="5"/>
-</Grid>
+      <ContentPresenter Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Grid.ColumnSpan="3" Margin="5"/>
+    </Grid>
            
                      <Grid>
                 <Grid.RowDefinitions>
@@ -909,14 +909,24 @@
                                                          />
                                          </Button>
                                           <!-- Индикатор статуса подключения -->
-                                          <Ellipse x:Name="ConnectionStatusIndicator"
-                                                    Width="8"
-                                                    Height="8"
-                                                    Fill="#f04736"
-                                                    Margin="10,4,0,0"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Center"/>
-                                        </StackPanel>
+                                           <Ellipse x:Name="ConnectionStatusIndicator"
+                                                      Width="8"
+                                                      Height="8"
+                                                      Fill="#f04736"
+                                                      Margin="5,4,0,0"
+                                                      HorizontalAlignment="Left"
+                                                      VerticalAlignment="Center"/>
+                                           <!-- Название активной таблицы -->
+                                             <TextBlock x:Name="ActiveTableNameTextBlock"
+                                                        Text=""
+                                                        Foreground="White"
+                                                        FontSize="13"
+                                                        FontWeight="Normal"
+                                                        Margin="8,3,0,0"
+                                                        VerticalAlignment="Center"
+                                                        TextTrimming="CharacterEllipsis"
+                                                        TextWrapping="NoWrap"/>
+                                          </StackPanel>
 
                                         <StackPanel Grid.Column="1"
                                                   Orientation="Horizontal"
