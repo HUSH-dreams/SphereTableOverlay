@@ -2471,7 +2471,9 @@ public bool IsContentCollapsed
                  }
 
                 // 3. Пересортировываем — порядок может измениться, т.к. WhiteTime меняется
-                Application.Current.Dispatcher.Invoke(() => ApplyFilterAndSort());
+                 // Используем SortCastles() вместо ApplyFilterAndSort() — он двигает строки через Move()
+                 // вместо Clear()+Add(), что блокирует UI-поток на 100-200мс
+                 Application.Current.Dispatcher.Invoke(() => SortCastles());
             }
             catch (Exception ex)
             {

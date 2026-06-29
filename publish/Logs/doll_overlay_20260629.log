@@ -1,0 +1,20 @@
+[2026-06-29 15:40:47.132 INF] === DollOverlay запущен ===
+[2026-06-29 15:40:47.461 INF] LoadColumnOrder: loaded json={"StatusColor":[0,20],"nameRu":[1,72.89895725250247],"WhiteTimeExact":[2,50.57969795995234],"fillingSpheretime":[3,37.93475103378296],"RedTimeExact":[6,52.516357421875],"commentary":[7,105.87498429429348],"OwnerClanName":[4,69.56490326012133]}
+[2026-06-29 15:40:47.468 INF] LoadCol: StatusColor width 10 -> 20
+[2026-06-29 15:40:47.472 INF] LoadCol: nameRu width 120 -> 72.89895725250247
+[2026-06-29 15:40:47.472 INF] LoadCol: WhiteTimeExact width 70 -> 50.57969795995234
+[2026-06-29 15:40:47.473 INF] LoadCol: WhiteTimeExact width 70 -> 50.57969795995234
+[2026-06-29 15:40:47.473 INF] LoadCol: fillingSpheretime width 50 -> 37.93475103378296
+[2026-06-29 15:40:47.473 INF] LoadCol: RedTimeExact width 70 -> 52.516357421875
+[2026-06-29 15:40:47.473 INF] LoadCol: commentary width 150 -> 105.87498429429348
+[2026-06-29 15:40:47.473 INF] LoadCol: OwnerClanName width 70 -> 69.56490326012133
+[2026-06-29 15:40:55.005 INF] SaveCol: StatusColor idx=0 width=20 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveCol: nameRu idx=1 width=72.89895725250247 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveCol: WhiteTimeExact idx=5 width=50.57969795995234 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveCol: WhiteTimeExact idx=2 width=50.57969795995234 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveCol: fillingSpheretime idx=3 width=37.93475103378296 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveCol: RedTimeExact idx=6 width=52.516357421875 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveCol: commentary idx=7 width=105.87498429429348 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveCol: OwnerClanName idx=4 width=69.56490326012133 IsAbs=true
+[2026-06-29 15:40:55.006 INF] SaveColumnOrder saved: {"StatusColor":[0,20],"nameRu":[1,72.89895725250247],"WhiteTimeExact":[2,50.57969795995234],"fillingSpheretime":[3,37.93475103378296],"RedTimeExact":[6,52.516357421875],"commentary":[7,105.87498429429348],"OwnerClanName":[4,69.56490326012133]}
+[2026-06-29 15:40:55.014 INF] === DollOverlay остановлен ===
