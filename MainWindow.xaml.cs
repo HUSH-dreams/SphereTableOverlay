@@ -387,7 +387,7 @@ namespace DollOverlay
         // Когда UseColonFormat меняется — инвалидируем кэш строк
         static event Action? ColonFormatChanged;
 
-        private void RecomputeCache()
+        internal void RecomputeCache()
         {
             if (string.IsNullOrEmpty(fillingDatetime) || !long.TryParse(fillingDatetime, out long unixTime) || lvl == null || fillingLvl == null)
             {
@@ -2460,14 +2460,15 @@ public bool IsContentCollapsed
                     castlesSnapshot = originalCastles.ToList();
                 }
 
-                // 2. Обновляем свойства (это вызывает пересчет WhiteTime внутри геттеров)
-                foreach (var castle in castlesSnapshot)
-                {
-                    castle.NotifyPropertyChanged(nameof(castle.WhiteTime));
-                    castle.NotifyPropertyChanged(nameof(castle.StatusText));
-                    castle.NotifyPropertyChanged(nameof(castle.StatusColor));
-                    castle.NotifyPropertyChanged(nameof(castle.RedTime));
-                }
+                // 2. Обновляем свойства (пересчитываем кэш, затем уведомляем UI)
+                 foreach (var castle in castlesSnapshot)
+                 {
+                     castle.RecomputeCache();
+                     castle.NotifyPropertyChanged(nameof(castle.WhiteTime));
+                     castle.NotifyPropertyChanged(nameof(castle.StatusText));
+                     castle.NotifyPropertyChanged(nameof(castle.StatusColor));
+                     castle.NotifyPropertyChanged(nameof(castle.RedTime));
+                 }
 
                 // 3. Пересортировываем — порядок может измениться, т.к. WhiteTime меняется
                 Application.Current.Dispatcher.Invoke(() => ApplyFilterAndSort());
